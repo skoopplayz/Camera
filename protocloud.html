@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Material Camera Pro - Cloud Sync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, deleteDoc, onSnapshot, query, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.firebaseCore = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, collection, doc, addDoc, deleteDoc, onSnapshot, query, setDoc };
+    </script>
+
+    <style>
+        :root {
+            --md-sys-color-primary: #0b57d0;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-surface: #f8f9fa;
+            --md-sys-color-surface-container: #eff1f3;
+            --md-sys-color-on-surface: #1f1f1f;
+            --md-sys-color-secondary-container: #d3e3fd;
+            --md-sys-color-on-secondary-container: #041e49;
+            --md-sys-color-outline: #747775;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--md-sys-color-on-surface);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+
+        #video-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            transition: filter 0.1s ease;
+        }
+
+        /* M3 Google Maps Style Card */
+        .maps-card {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            border-radius: 100px; /* Standard M3 Full Rounding */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .shutter-btn {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            border: 5px solid white;
+            padding: 6px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .shutter-btn:active { transform: scale(0.92); }
+
+        .shutter-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mode-video .shutter-inner { background-color: #d93025; }
+        
+        .recording .shutter-inner {
+            border-radius: 12px;
+            transform: scale(0.55);
+        }
+
+        #camera-grid {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.25); }
+
+        .active-chip {
+            background-color: var(--md-sys-color-secondary-container) !important;
+            color: var(--md-sys-color-on-secondary-container) !important;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-radius: 32px 32px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+            max-height: 94vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+        }
+        .bottom-sheet.active { transform: translateY(0); }
+
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 90;
+        }
+        .sheet-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-bottom: 20px;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            position: relative;
+            background: #1a1a1a;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .gallery-item img, .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item.selected {
+            padding: 8px;
+            background: var(--md-sys-color-primary);
+        }
+        .gallery-item.selected img, .gallery-item.selected video {
+            border-radius: 12px;
+            transform: scale(0.95);
+        }
+
+        .video-badge {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            color: white;
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+
+        #lightbox {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+        }
+        #lightbox.active { display: flex; }
+
+        .drag-handle {
+            width: 32px;
+            height: 4px;
+            background: #ddd;
+            border-radius: 100px;
+            margin: 16px auto;
+        }
+
+        .filter-chip {
+            padding: 8px 24px;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 500;
+            background: #f1f3f4;
+            color: #444746;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #323232;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-size: 14px;
+            z-index: 600;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Onboarding Setup - Google Maps M3 Style */
+        #setup-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--md-sys-color-surface);
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            justify-content: center;
+        }
+
+        .setup-card {
+            max-width: 440px;
+            margin: 0 auto;
+            width: 100%;
+            background: white;
+            padding: 32px;
+            border-radius: 32px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .m3-btn-primary {
+            background-color: var(--md-sys-color-primary);
+            color: white;
+            border-radius: 100px;
+            padding: 16px 24px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .m3-btn-primary:active { transform: scale(0.96); opacity: 0.9; }
+
+        .m3-btn-tonal {
+            background-color: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+            border-radius: 100px;
+            padding: 16px 24px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .m3-input {
+            background-color: var(--md-sys-color-surface-container);
+            border: 2px solid transparent;
+            border-radius: 100px;
+            padding: 16px 24px;
+            width: 100%;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .m3-input:focus {
+            border-color: var(--md-sys-color-primary);
+            background-color: white;
+        }
+
+        /* Sync Indicator */
+        .sync-active {
+            color: var(--md-sys-color-primary) !important;
+            animation: pulse-sync 2.5s infinite;
+        }
+        @keyframes pulse-sync {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Setup Onboarding -->
+    <div id="setup-overlay" class="hidden">
+        <div class="setup-card space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
+            <div class="space-y-4 text-center">
+                <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-full mx-auto flex items-center justify-center shadow-sm">
+                    <span class="material-symbols-rounded text-5xl">google_plus_resale</span>
+                </div>
+                <h1 class="text-3xl font-medium tracking-tight text-gray-900">Cloud Gallery</h1>
+                <p class="text-gray-500 leading-relaxed px-4">Collaborate on photos and videos in real-time. Everything is synced to your unique Cloud Key.</p>
+            </div>
+
+            <div class="space-y-4">
+                <button id="btn-create-new" class="m3-btn-primary w-full">
+                    <span class="material-symbols-rounded">add_circle</span>
+                    Create New Gallery
+                </button>
+                
+                <div class="flex items-center gap-4 py-2">
+                    <div class="h-px flex-grow bg-gray-100"></div>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">or Join Existing</span>
+                    <div class="h-px flex-grow bg-gray-100"></div>
+                </div>
+
+                <div class="space-y-4">
+                    <input type="text" id="setup-key-input" placeholder="Enter Shared Key" class="m3-input">
+                    <button id="btn-join-setup" class="m3-btn-tonal w-full">
+                        Join Gallery
+                    </button>
+                </div>
+            </div>
+            
+            <p class="text-center text-[11px] text-gray-400 font-medium">Synced media is shared with anyone using your key.</p>
+        </div>
+    </div>
+
+    <!-- Main Camera UI -->
+    <main class="relative flex-grow overflow-hidden">
+        <video id="video-preview" autoplay playsinline muted></video>
+        
+        <div id="camera-grid">
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+        </div>
+
+        <div id="timer-display" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] text-white font-medium drop-shadow-2xl pointer-events-none z-50 hidden"></div>
+
+        <!-- Header -->
+        <div class="absolute top-4 left-4 right-4 z-40">
+            <div class="maps-card flex items-center h-16 px-4 gap-2">
+                <button id="flash-btn" class="w-11 h-11 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+                    <span class="material-symbols-rounded">flash_off</span>
+                </button>
+                <div class="flex-grow text-sm font-medium text-gray-900 px-2 truncate text-center" id="recording-status">
+                    Pro Camera
+                </div>
+                <button id="sync-trigger" class="w-11 h-11 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+                    <span class="material-symbols-rounded" id="sync-icon">cloud_sync</span>
+                </button>
+                <button id="settings-trigger" class="w-11 h-11 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+                    <span class="material-symbols-rounded">settings</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom UI -->
+        <div class="absolute bottom-10 left-0 w-full flex flex-col items-center gap-8 z-40">
+            <!-- M3 pill switcher -->
+            <div id="mode-switcher" class="maps-card flex p-1.5 gap-1.5">
+                <button id="btn-photo-mode" class="px-8 py-2.5 rounded-full text-sm font-medium active-chip transition-all">Photo</button>
+                <button id="btn-video-mode" class="px-8 py-2.5 rounded-full text-sm font-medium text-gray-600 hover:bg-black/5 transition-all">Video</button>
+            </div>
+
+            <div class="flex items-center gap-12">
+                <button id="gallery-trigger" class="w-16 h-16 rounded-[24px] bg-black/40 border border-white/20 overflow-hidden backdrop-blur-xl flex items-center justify-center shadow-2xl relative">
+                    <span id="gallery-icon" class="material-symbols-rounded text-white/80 text-3xl">photo_library</span>
+                    <img id="last-capture-img" class="hidden absolute inset-0 w-full h-full object-cover">
+                </button>
+
+                <button id="shutter" class="shutter-btn shadow-2xl">
+                    <div class="shutter-inner"></div>
+                </button>
+
+                <button id="flip-btn" class="w-16 h-16 rounded-full bg-black/40 border border-white/20 backdrop-blur-xl flex items-center justify-center shadow-2xl transition-transform active:scale-90">
+                    <span class="material-symbols-rounded text-white text-3xl">flip_camera_android</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sync Bottom Sheet -->
+    <div id="sync-sheet" class="bottom-sheet">
+        <div class="drag-handle" onclick="closeSheets()"></div>
+        <div class="px-6 pb-8 space-y-6">
+            <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-medium text-gray-900">Sync Settings</h3>
+                <button id="btn-generate-random" class="text-sm font-medium text-blue-600 flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-full transition-colors">
+                    <span class="material-symbols-rounded text-lg">autorenew</span>
+                    Reset Key
+                </button>
+            </div>
+            
+            <div id="active-sync-info" class="hidden p-5 bg-blue-50 rounded-[28px] border border-blue-100 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                        <span class="material-symbols-rounded text-blue-600">cloud_done</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-blue-700 uppercase tracking-widest">Connected Key</p>
+                        <p class="text-lg font-medium text-blue-900" id="current-key-display">Not connected</p>
+                    </div>
+                </div>
+                <button id="btn-copy-key" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-sm active:scale-90 transition-transform">
+                    <span class="material-symbols-rounded text-xl">content_copy</span>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-widest px-2">Change Shared Key</label>
+                <div class="flex gap-2">
+                    <input type="text" id="sync-key-input" placeholder="Enter Sync Key" class="m3-input flex-grow">
+                    <button id="btn-apply-sync" class="m3-btn-primary px-8">Connect</button>
+                </div>
+                <p class="text-xs text-gray-400 px-2 italic">Changing keys will update your gallery view immediately.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Bottom Sheet -->
+    <div id="settings-sheet" class="bottom-sheet">
+        <div class="drag-handle" onclick="closeSheets()"></div>
+        <div class="px-6 pb-8 space-y-6">
+            <h3 class="text-2xl font-medium text-gray-900">Preferences</h3>
+            
+            <div class="space-y-3">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500 px-1">Resolution</p>
+                <div class="flex gap-2">
+                    <button data-res="HD" class="res-toggle flex-1 py-4 rounded-full border border-gray-100 text-sm font-medium active-chip transition-all">Full HD</button>
+                    <button data-res="4K" class="res-toggle flex-1 py-4 rounded-full border border-gray-100 text-sm font-medium hover:bg-gray-50 transition-all">4K Ultra</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-5 bg-gray-50 rounded-[28px]">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+                        <span class="material-symbols-rounded text-blue-600">grid_4x4</span>
+                    </div>
+                    <div>
+                        <span class="block font-medium">Composition Grid</span>
+                        <span class="text-xs text-gray-500">Show rule of thirds lines</span>
+                    </div>
+                </div>
+                <button id="grid-toggle" class="w-14 h-8 bg-gray-200 rounded-full relative transition-colors">
+                    <div class="dot absolute left-1 top-1 w-6 h-6 bg-white rounded-full transition-all shadow-md"></div>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500 px-1">Self Timer</p>
+                <div class="flex gap-2">
+                    <button data-timer="0" class="timer-btn flex-1 py-4 rounded-full border border-gray-100 text-sm active-chip font-medium">Off</button>
+                    <button data-timer="3" class="timer-btn flex-1 py-4 rounded-full border border-gray-100 text-sm font-medium">3s</button>
+                    <button data-timer="10" class="timer-btn flex-1 py-4 rounded-full border border-gray-100 text-sm font-medium">10s</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Bottom Sheet -->
+    <div id="gallery-sheet" class="bottom-sheet">
+        <div class="drag-handle" onclick="closeSheets()"></div>
+        
+        <div class="px-5 pb-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="gallery-title" class="text-2xl font-medium text-gray-900">Cloud Photos</h3>
+                
+                <div class="flex gap-1" id="gallery-actions-default">
+                    <button id="btn-select-mode" class="p-3 text-gray-700 rounded-full hover:bg-gray-100">
+                        <span class="material-symbols-rounded">checklist</span>
+                    </button>
+                    <button id="bulk-download" class="p-3 text-blue-600 rounded-full hover:bg-blue-50">
+                        <span class="material-symbols-rounded">download_for_offline</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 hidden" id="gallery-actions-selection">
+                    <button id="btn-select-all" class="text-sm font-medium text-blue-600 px-4 py-2 rounded-full hover:bg-blue-50">All</button>
+                    <div class="h-6 w-px bg-gray-200 mx-1"></div>
+                    <button id="btn-delete-selected" class="p-2.5 text-red-500 rounded-full hover:bg-red-50">
+                        <span class="material-symbols-rounded">delete</span>
+                    </button>
+                    <button id="btn-cancel-selection" class="p-2.5 text-gray-500 rounded-full hover:bg-gray-100">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="selection-banner" class="hidden mb-4 py-3 px-5 bg-blue-600 text-white rounded-[100px] text-sm font-medium flex justify-between items-center shadow-lg">
+                <span id="selection-count">0 selected</span>
+                <button id="btn-download-selected" class="flex items-center gap-1 bg-white/20 px-4 py-1.5 rounded-full">
+                    <span class="material-symbols-rounded text-lg">download</span> Save
+                </button>
+            </div>
+
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                <button class="filter-chip active-chip" data-filter="all">All Items</button>
+                <button class="filter-chip" data-filter="image">Photos</button>
+                <button class="filter-chip" data-filter="video">Videos</button>
+            </div>
+        </div>
+
+        <div id="gallery-content" class="gallery-grid"></div>
+        
+        <div id="empty-gallery" class="py-24 text-center text-gray-400 hidden">
+            <span class="material-symbols-rounded text-6xl block mb-4 opacity-20">cloud_off</span>
+            <p class="font-medium text-gray-600">Gallery is empty</p>
+            <p class="text-sm opacity-60">Photos taken with this key appear here</p>
+        </div>
+    </div>
+
+    <!-- Lightbox Viewer -->
+    <div id="lightbox">
+        <div class="flex justify-between items-center p-4 text-white z-50 bg-gradient-to-b from-black/60 to-transparent">
+            <button id="lightbox-close" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 active:scale-90 transition-transform">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+            <div id="lightbox-meta" class="text-center">
+                <p class="text-sm font-medium" id="lightbox-date">Jan 01, 2024</p>
+                <p class="text-[10px] opacity-60 uppercase tracking-widest font-bold" id="lightbox-time">12:00 PM</p>
+            </div>
+            <div class="flex gap-2">
+                <button id="lightbox-delete" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 text-red-400">
+                    <span class="material-symbols-rounded">delete</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-grow flex items-center justify-center relative">
+            <button id="lightbox-prev" class="lightbox-nav-btn left-6">
+                <span class="material-symbols-rounded text-3xl">chevron_left</span>
+            </button>
+            <div id="lightbox-main" class="w-full h-full flex items-center justify-center"></div>
+            <button id="lightbox-next" class="lightbox-nav-btn right-6">
+                <span class="material-symbols-rounded text-3xl">chevron_right</span>
+            </button>
+        </div>
+
+        <div id="lightbox-footer" class="p-8 pb-14 flex justify-center bg-gradient-to-t from-black/60 to-transparent z-50">
+            <button id="lightbox-download" class="m3-btn-primary px-12 py-5 shadow-2xl">
+                <span class="material-symbols-rounded fill-icon">download</span>
+                Save to Device
+            </button>
+        </div>
+    </div>
+
+    <canvas id="capture-canvas" class="hidden"></canvas>
+    <div id="sheet-overlay" class="sheet-overlay"></div>
+    <div id="toast"></div>
+
+    <script type="module">
+        const state = {
+            stream: null,
+            mode: 'photo',
+            isRecording: false,
+            facingMode: 'environment', 
+            flash: false,
+            mediaRecorder: null,
+            chunks: [],
+            settings: { res: 'HD', grid: false, timer: 0 },
+            timerRunning: false,
+            // Sync State
+            syncKey: localStorage.getItem('cam_sync_key_m3') || '',
+            db: null,
+            auth: null,
+            appId: typeof __app_id !== 'undefined' ? __app_id : 'camera-pro-m3',
+            unsubscribe: null,
+            // Gallery State
+            galleryItems: [],
+            selectionMode: false,
+            selectedIds: new Set(),
+            currentFilter: 'all',
+            lightboxIndex: -1,
+            get currentViewingItems() {
+                return this.galleryItems.filter(i => this.currentFilter === 'all' || i.type === this.currentFilter);
+            }
+        };
+
+        const els = {
+            video: document.getElementById('video-preview'),
+            shutter: document.getElementById('shutter'),
+            modePhoto: document.getElementById('btn-photo-mode'),
+            modeVideo: document.getElementById('btn-video-mode'),
+            modeSwitcher: document.getElementById('mode-switcher'),
+            flash: document.getElementById('flash-btn'),
+            flip: document.getElementById('flip-btn'),
+            canvas: document.getElementById('capture-canvas'),
+            settingsTrigger: document.getElementById('settings-trigger'),
+            settingsSheet: document.getElementById('settings-sheet'),
+            syncTrigger: document.getElementById('sync-trigger'),
+            syncSheet: document.getElementById('sync-sheet'),
+            syncInput: document.getElementById('sync-key-input'),
+            btnApplySync: document.getElementById('btn-apply-sync'),
+            btnCopyKey: document.getElementById('btn-copy-key'),
+            activeSyncInfo: document.getElementById('active-sync-info'),
+            currentKeyDisplay: document.getElementById('current-key-display'),
+            syncIcon: document.getElementById('sync-icon'),
+            btnGenRandom: document.getElementById('btn-generate-random'),
+            galleryTrigger: document.getElementById('gallery-trigger'),
+            gallerySheet: document.getElementById('gallery-sheet'),
+            overlay: document.getElementById('sheet-overlay'),
+            grid: document.getElementById('camera-grid'),
+            gridToggle: document.getElementById('grid-toggle'),
+            timerDisplay: document.getElementById('timer-display'),
+            lastThumb: document.getElementById('last-capture-img'),
+            galleryIcon: document.getElementById('gallery-icon'),
+            status: document.getElementById('recording-status'),
+            galleryContent: document.getElementById('gallery-content'),
+            emptyGallery: document.getElementById('empty-gallery'),
+            bulkDownload: document.getElementById('bulk-download'),
+            toast: document.getElementById('toast'),
+            setupOverlay: document.getElementById('setup-overlay'),
+            setupInput: document.getElementById('setup-key-input'),
+            btnJoinSetup: document.getElementById('btn-join-setup'),
+            btnCreateNew: document.getElementById('btn-create-new'),
+            btnSelectMode: document.getElementById('btn-select-mode'),
+            btnCancelSelection: document.getElementById('btn-cancel-selection'),
+            btnSelectAll: document.getElementById('btn-select-all'),
+            actionsDefault: document.getElementById('gallery-actions-default'),
+            actionsSelection: document.getElementById('gallery-actions-selection'),
+            selectionBanner: document.getElementById('selection-banner'),
+            selectionCount: document.getElementById('selection-count'),
+            btnDeleteSelected: document.getElementById('btn-delete-selected'),
+            btnDownloadSelected: document.getElementById('btn-download-selected'),
+            lightbox: document.getElementById('lightbox'),
+            lightboxMain: document.getElementById('lightbox-main'),
+            lightboxClose: document.getElementById('lightbox-close'),
+            lightboxDate: document.getElementById('lightbox-date'),
+            lightboxTime: document.getElementById('lightbox-time'),
+            lightboxDelete: document.getElementById('lightbox-delete'),
+            lightboxDownload: document.getElementById('lightbox-download'),
+            lightboxPrev: document.getElementById('lightbox-prev'),
+            lightboxNext: document.getElementById('lightbox-next'),
+            lightboxFooter: document.getElementById('lightbox-footer')
+        };
+
+        // --- M3 Random Key Generator ---
+        function generateRandomKey() {
+            const adj = ['sparkling', 'neon', 'urban', 'quiet', 'vivid', 'golden', 'hidden', 'arctic', 'dusty', 'retro', 'lunar', 'dreamy', 'wild', 'mellow', 'cosmic', 'smart'];
+            const names = ['album', 'studio', 'frames', 'lens', 'shutter', 'nexus', 'view', 'vault', 'portal', 'peak', 'capture', 'vision'];
+            const r1 = adj[Math.floor(Math.random() * adj.length)];
+            const r2 = names[Math.floor(Math.random() * names.length)];
+            const num = Math.floor(Math.random() * 89) + 10;
+            return `${r1}-${r2}-${num}`;
+        }
+
+        // --- Firebase Core ---
+        async function initFirebase() {
+            const { initializeApp, getAuth, signInAnonymously, getFirestore } = window.firebaseCore;
+            
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            state.auth = getAuth(app);
+            state.db = getFirestore(app);
+
+            try {
+                await signInAnonymously(state.auth);
+                if (state.syncKey) {
+                    connectSync(state.syncKey);
+                } else {
+                    els.setupOverlay.classList.remove('hidden');
+                }
+            } catch (e) {
+                showToast("Connection failed. Check network.");
+            }
+        }
+
+        function connectSync(key) {
+            if (state.unsubscribe) state.unsubscribe();
+            state.syncKey = key.trim().toLowerCase();
+            localStorage.setItem('cam_sync_key_m3', state.syncKey);
+            
+            els.currentKeyDisplay.textContent = state.syncKey;
+            els.activeSyncInfo.classList.remove('hidden');
+            els.syncIcon.classList.add('sync-active');
+            els.setupOverlay.classList.add('hidden');
+
+            const { collection, onSnapshot } = window.firebaseCore;
+            const colRef = collection(state.db, 'artifacts', state.appId, 'public', 'data', state.syncKey);
+            
+            state.unsubscribe = onSnapshot(colRef, (snapshot) => {
+                state.galleryItems = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })).sort((a,b) => b.timestamp - a.timestamp);
+                
+                renderGallery();
+                updateThumb();
+            }, (err) => {
+                showToast("Connection Error: Check key.");
+            });
+        }
+
+        // --- Camera Core ---
+        async function startCamera() {
+            if (state.stream) state.stream.getTracks().forEach(t => t.stop());
+
+            const constraints = {
+                video: {
+                    facingMode: state.facingMode,
+                    width: state.settings.res === '4K' ? { ideal: 3840 } : { ideal: 1920 },
+                    height: state.settings.res === '4K' ? { ideal: 2160 } : { ideal: 1080 }
+                },
+                audio: true
+            };
+
+            try {
+                state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                els.video.srcObject = state.stream;
+                const actualFacing = state.stream.getVideoTracks()[0].getSettings().facingMode;
+                els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+            } catch (err) {
+                showToast("Camera access restricted");
+            }
+        }
+
+        async function takePhoto() {
+            if (!els.video.videoWidth || !state.syncKey) return;
+
+            els.canvas.width = els.video.videoWidth;
+            els.canvas.height = els.video.videoHeight;
+            const ctx = els.canvas.getContext('2d');
+            
+            if (state.facingMode === 'user') {
+                ctx.translate(els.canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(els.video, 0, 0);
+
+            els.video.style.filter = 'brightness(2) contrast(0.8)';
+            setTimeout(() => els.video.style.filter = '', 100);
+
+            const base64 = els.canvas.toDataURL('image/jpeg', 0.6);
+            saveToCloud(base64, 'image');
+        }
+
+        async function toggleRecording() {
+            if (!state.syncKey) return;
+
+            if (!state.isRecording) {
+                state.chunks = [];
+                let mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm;codecs=vp8,opus';
+                
+                state.mediaRecorder = new MediaRecorder(state.stream, { mimeType });
+                state.mediaRecorder.ondataavailable = e => state.chunks.push(e.data);
+                state.mediaRecorder.onstop = async () => {
+                    const blob = new Blob(state.chunks, { type: state.mediaRecorder.mimeType });
+                    if (blob.size > 1000000) {
+                        showToast("Clip too long for sync (Max 1MB)");
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onloadend = () => saveToCloud(reader.result, 'video');
+                    reader.readAsDataURL(blob);
+
+                    els.status.textContent = "Pro Camera";
+                    els.status.classList.remove('text-red-600');
+                    setRecordingLock(false);
+                };
+
+                state.mediaRecorder.start();
+                state.isRecording = true;
+                setRecordingLock(true);
+                els.shutter.classList.add('recording');
+                els.status.classList.add('text-red-600');
+                
+                let startTime = Date.now();
+                const recordInterval = setInterval(() => {
+                    if (!state.isRecording) { clearInterval(recordInterval); return; }
+                    const diff = Math.floor((Date.now() - startTime) / 1000);
+                    const m = Math.floor(diff/60).toString().padStart(2, '0');
+                    const s = (diff%60).toString().padStart(2, '0');
+                    els.status.textContent = `REC • ${m}:${s}`;
+                }, 1000);
+            } else {
+                state.mediaRecorder.stop();
+                state.isRecording = false;
+                els.shutter.classList.remove('recording');
+            }
+        }
+
+        async function saveToCloud(data, type) {
+            const { collection, addDoc } = window.firebaseCore;
+            if (!state.auth.currentUser) return;
+
+            const colRef = collection(state.db, 'artifacts', state.appId, 'public', 'data', state.syncKey);
+            const item = {
+                data: data,
+                type: type,
+                timestamp: Date.now(),
+                filename: `${type === 'image' ? 'IMG' : 'VID'}_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`
+            };
+
+            try {
+                await addDoc(colRef, item);
+                showToast("Synced to Gallery");
+            } catch (e) {
+                showToast("Size limit reached for sync.");
+            }
+        }
+
+        function renderGallery() {
+            els.galleryContent.innerHTML = '';
+            const filtered = state.currentViewingItems;
+            
+            if (filtered.length === 0) {
+                els.emptyGallery.classList.remove('hidden');
+            } else {
+                els.emptyGallery.classList.add('hidden');
+                filtered.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = `gallery-item ${state.selectedIds.has(item.id) ? 'selected' : ''}`;
+                    
+                    if (item.type === 'image') {
+                        div.innerHTML = `<div class="select-check"><span class="material-symbols-rounded" style="font-size:16px;">check</span></div>
+                                         <img src="${item.data}" loading="lazy">`;
+                    } else {
+                        div.innerHTML = `<div class="select-check"><span class="material-symbols-rounded" style="font-size:16px;">check</span></div>
+                                         <video src="${item.data}#t=0.5"></video>
+                                         <div class="video-badge"><span class="material-symbols-rounded" style="font-size:12px;">videocam</span>VIDEO</div>`;
+                    }
+
+                    div.onclick = () => {
+                        if (state.selectionMode) {
+                            if (state.selectedIds.has(item.id)) state.selectedIds.delete(item.id);
+                            else state.selectedIds.add(item.id);
+                            updateSelectionUI();
+                            renderGallery();
+                        } else {
+                            openLightbox(index);
+                        }
+                    };
+                    els.galleryContent.appendChild(div);
+                });
+            }
+        }
+
+        // --- Lightbox Functions ---
+        function openLightbox(index) {
+            state.lightboxIndex = index;
+            els.lightbox.classList.add('active');
+            updateLightboxContent();
+        }
+
+        function updateLightboxContent() {
+            const items = state.currentViewingItems;
+            const item = items[state.lightboxIndex];
+            if (!item) return;
+
+            els.lightboxMain.innerHTML = '';
+            
+            if (item.type === 'image') {
+                els.lightboxFooter.style.display = 'flex';
+                const img = document.createElement('img');
+                img.src = item.data;
+                img.className = 'max-w-full max-h-full object-contain';
+                els.lightboxMain.appendChild(img);
+            } else {
+                els.lightboxFooter.style.display = 'none';
+                initCustomVideoPlayer(item.data);
+            }
+
+            const d = new Date(item.timestamp);
+            els.lightboxDate.textContent = d.toLocaleDateString();
+            els.lightboxTime.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            els.lightboxPrev.style.opacity = state.lightboxIndex > 0 ? '1' : '0.2';
+            els.lightboxNext.style.opacity = state.lightboxIndex < items.length - 1 ? '1' : '0.2';
+        }
+
+        function initCustomVideoPlayer(src) {
+            const container = document.createElement('div');
+            container.className = 'video-player-container';
+            container.innerHTML = `
+                <video id="lb-video" src="${src}" class="max-w-full max-h-full" autoplay loop></video>
+                <div class="custom-controls absolute bottom-8 left-8 right-8 bg-black/30 backdrop-blur-md p-4 rounded-full flex items-center justify-between text-white">
+                    <button id="lb-play-btn" class="w-10 h-10 flex items-center justify-center"><span class="material-symbols-rounded fill-icon">pause</span></button>
+                    <div class="flex-grow mx-4 h-1 bg-white/20 rounded-full overflow-hidden">
+                        <div id="lb-progress" class="h-full bg-white w-0"></div>
+                    </div>
+                    <button id="lb-save" class="bg-white text-black px-6 py-2 rounded-full text-xs font-bold">SAVE</button>
+                </div>`;
+            els.lightboxMain.appendChild(container);
+
+            const v = container.querySelector('#lb-video');
+            const playBtn = container.querySelector('#lb-play-btn');
+            const saveBtn = container.querySelector('#lb-save');
+            const progress = container.querySelector('#lb-progress');
+
+            v.ontimeupdate = () => progress.style.width = `${(v.currentTime / v.duration) * 100}%`;
+            playBtn.onclick = () => {
+                if (v.paused) { v.play(); playBtn.querySelector('span').textContent = 'pause'; }
+                else { v.pause(); playBtn.querySelector('span').textContent = 'play_arrow'; }
+            };
+            saveBtn.onclick = () => downloadBlob(itemToBlob(state.currentViewingItems[state.lightboxIndex]));
+        }
+
+        function itemToBlob(item) {
+            const parts = item.data.split(',');
+            const mime = parts[0].match(/:(.*?);/)[1];
+            const bstr = atob(parts[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) u8arr[n] = bstr.charCodeAt(n);
+            return new Blob([u8arr], { type: mime });
+        }
+
+        async function deleteItems(ids) {
+            const { doc, deleteDoc } = window.firebaseCore;
+            for (const id of ids) {
+                await deleteDoc(doc(state.db, 'artifacts', state.appId, 'public', 'data', state.syncKey, id));
+            }
+            showToast("Removed from cloud");
+        }
+
+        function showToast(msg) {
+            els.toast.textContent = msg;
+            els.toast.style.opacity = '1';
+            els.toast.style.transform = 'translateX(-50%) translateY(-10px)';
+            setTimeout(() => {
+                els.toast.style.opacity = '0';
+                els.toast.style.transform = 'translateX(-50%) translateY(0)';
+            }, 2500);
+        }
+
+        function setRecordingLock(locked) {
+            [els.flip, els.modeSwitcher, els.settingsTrigger, els.galleryTrigger, els.syncTrigger].forEach(el => {
+                el.style.pointerEvents = locked ? 'none' : 'auto';
+                el.style.opacity = locked ? '0.3' : '1';
+            });
+        }
+
+        function closeSheets() {
+            els.settingsSheet.classList.remove('active');
+            els.gallerySheet.classList.remove('active');
+            els.syncSheet.classList.remove('active');
+            els.overlay.classList.remove('active');
+            toggleSelectionMode(false);
+        }
+
+        function updateThumb() {
+            if (state.galleryItems.length > 0) {
+                els.lastThumb.src = state.galleryItems[0].data;
+                els.lastThumb.classList.remove('hidden');
+                els.galleryIcon.classList.add('hidden');
+            } else {
+                els.lastThumb.classList.add('hidden');
+                els.galleryIcon.classList.remove('hidden');
+            }
+        }
+
+        function downloadBlob(blob, name = "media.jpg") {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = name;
+            a.click();
+        }
+
+        function toggleSelectionMode(active) {
+            state.selectionMode = active;
+            state.selectedIds.clear();
+            els.actionsDefault.classList.toggle('hidden', active);
+            els.actionsSelection.classList.toggle('hidden', !active);
+            els.selectionBanner.classList.toggle('hidden', !active);
+            updateSelectionUI();
+            renderGallery();
+        }
+
+        function updateSelectionUI() {
+            els.selectionCount.textContent = `${state.selectedIds.size} items selected`;
+        }
+
+        // --- Event Listeners ---
+        els.shutter.onclick = () => {
+            if (state.timerRunning) return;
+            if (state.settings.timer > 0 && !state.isRecording) {
+                state.timerRunning = true;
+                let count = state.settings.timer;
+                els.timerDisplay.classList.remove('hidden');
+                els.timerDisplay.textContent = count;
+                const itv = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(itv);
+                        els.timerDisplay.classList.add('hidden');
+                        state.timerRunning = false;
+                        state.mode === 'photo' ? takePhoto() : toggleRecording();
+                    } else els.timerDisplay.textContent = count;
+                }, 1000);
+            } else {
+                state.mode === 'photo' ? takePhoto() : toggleRecording();
+            }
+        };
+
+        els.btnCreateNew.onclick = () => {
+            const key = generateRandomKey();
+            connectSync(key);
+            showToast("Created: " + key);
+        };
+
+        els.btnJoinSetup.onclick = () => {
+            const val = els.setupInput.value.trim();
+            if (val) connectSync(val);
+            else showToast("Please enter a key");
+        };
+
+        els.btnGenRandom.onclick = () => {
+            els.syncInput.value = generateRandomKey();
+        };
+
+        els.btnCopyKey.onclick = () => {
+            const key = state.syncKey;
+            const input = document.createElement('input');
+            input.value = key;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            showToast("Key copied to clipboard");
+        };
+
+        els.galleryTrigger.onclick = () => {
+            renderGallery();
+            els.gallerySheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
+
+        els.settingsTrigger.onclick = () => {
+            els.settingsSheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
+
+        els.syncTrigger.onclick = () => {
+            els.syncInput.value = state.syncKey;
+            els.syncSheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
+
+        els.btnApplySync.onclick = () => {
+            const val = els.syncInput.value.trim();
+            if (val) {
+                connectSync(val);
+                closeSheets();
+                showToast("Gallery connected");
+            } else showToast("Enter a key");
+        };
+
+        els.overlay.onclick = closeSheets;
+        els.modePhoto.onclick = () => { state.mode = 'photo'; els.modePhoto.classList.add('active-chip'); els.modeVideo.classList.remove('active-chip'); document.body.classList.remove('mode-video'); };
+        els.modeVideo.onclick = () => { state.mode = 'video'; els.modeVideo.classList.add('active-chip'); els.modePhoto.classList.remove('active-chip'); document.body.classList.add('mode-video'); };
+        els.flip.onclick = () => { state.facingMode = state.facingMode === 'user' ? 'environment' : 'user'; startCamera(); };
+        els.btnSelectMode.onclick = () => toggleSelectionMode(true);
+        els.btnCancelSelection.onclick = () => toggleSelectionMode(false);
+        els.btnDeleteSelected.onclick = () => { deleteItems([...state.selectedIds]); toggleSelectionMode(false); };
+        els.btnSelectAll.onclick = () => {
+            const items = state.currentViewingItems;
+            if (state.selectedIds.size === items.length) state.selectedIds.clear();
+            else items.forEach(i => state.selectedIds.add(i.id));
+            updateSelectionUI();
+            renderGallery();
+        };
+        els.btnDownloadSelected.onclick = () => {
+            state.galleryItems.filter(i => state.selectedIds.has(i.id)).forEach(i => downloadBlob(itemToBlob(i), i.filename));
+            toggleSelectionMode(false);
+        };
+        els.bulkDownload.onclick = () => state.galleryItems.forEach(i => downloadBlob(itemToBlob(i), i.filename));
+
+        els.lightboxClose.onclick = () => { els.lightbox.classList.remove('active'); els.lightboxMain.innerHTML = ''; };
+        els.lightboxDelete.onclick = () => { deleteItems([state.currentViewingItems[state.lightboxIndex].id]); els.lightboxClose.click(); };
+        els.lightboxPrev.onclick = () => { if (state.lightboxIndex > 0) openLightbox(state.lightboxIndex - 1); };
+        els.lightboxNext.onclick = () => { if (state.lightboxIndex < state.currentViewingItems.length - 1) openLightbox(state.lightboxIndex + 1); };
+        els.lightboxDownload.onclick = () => downloadBlob(itemToBlob(state.currentViewingItems[state.lightboxIndex]));
+
+        els.gridToggle.onclick = () => {
+            state.settings.grid = !state.settings.grid;
+            els.grid.style.opacity = state.settings.grid ? '1' : '0';
+            els.gridToggle.classList.toggle('bg-blue-600', state.settings.grid);
+            els.gridToggle.querySelector('.dot').style.transform = state.settings.grid ? 'translateX(24px)' : 'translateX(0)';
+        };
+
+        document.querySelectorAll('.res-toggle').forEach(btn => btn.onclick = () => {
+            document.querySelectorAll('.res-toggle').forEach(b => b.classList.remove('active-chip'));
+            btn.classList.add('active-chip');
+            state.settings.res = btn.dataset.res;
+            startCamera();
+        });
+
+        document.querySelectorAll('.timer-btn').forEach(btn => btn.onclick = () => {
+            document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active-chip'));
+            btn.classList.add('active-chip');
+            state.settings.timer = parseInt(btn.dataset.timer);
+        });
+
+        document.querySelectorAll('.filter-chip').forEach(btn => btn.onclick = () => {
+            document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active-chip'));
+            btn.classList.add('active-chip');
+            state.currentFilter = btn.dataset.filter;
+            renderGallery();
+        });
+
+        els.flash.onclick = async () => {
+            const track = state.stream?.getVideoTracks()[0];
+            const caps = track?.getCapabilities?.() || {};
+            if (caps.torch) {
+                state.flash = !state.flash;
+                await track.applyConstraints({ advanced: [{ torch: state.flash }] });
+                els.flash.querySelector('span').textContent = state.flash ? 'flash_on' : 'flash_off';
+                els.flash.classList.toggle('text-yellow-500', state.flash);
+            } else showToast("Flash not supported on this lens");
+        };
+
+        window.onload = async () => {
+            await initFirebase();
+            await startCamera();
+        };
+    </script>
+</body>
+</html>
