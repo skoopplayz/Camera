@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Material Camera Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <style>
         :root {
-            --md-sys-color-primary: #1a73e8;
-            --md-sys-color-surface: #ffffff;
-            --md-sys-color-surface-container: #f1f3f4;
-            --md-sys-color-on-surface: #202124;
-            --md-sys-color-error: #b3261e;
+            --md-sys-color-primary: #0b57d0;
+            --md-sys-color-surface: #f8f9fa;
+            --md-sys-color-on-surface: #1f1f1f;
+            --md-sys-color-secondary-container: #d3e3fd;
+            --md-sys-color-on-secondary-container: #041e49;
         }
 
         body {
@@ -31,22 +31,26 @@
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+
         #video-preview {
             width: 100%;
             height: 100%;
             object-fit: cover;
             background: #000;
+            transition: filter 0.1s ease;
         }
 
         .maps-card {
-            background: white;
-            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 32px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .shutter-btn {
-            width: 80px;
-            height: 80px;
+            width: 84px;
+            height: 84px;
             border-radius: 50%;
             border: 4px solid white;
             padding: 6px;
@@ -57,19 +61,21 @@
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        .shutter-btn:active { transform: scale(0.92); }
+
         .shutter-inner {
             width: 100%;
             height: 100%;
             border-radius: 50%;
             background-color: white;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .mode-video .shutter-inner { background-color: #d93025; }
         
         .recording .shutter-inner {
-            border-radius: 8px;
-            transform: scale(0.6);
+            border-radius: 12px;
+            transform: scale(0.55);
         }
 
         #camera-grid {
@@ -82,25 +88,11 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.15); }
+        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.25); }
 
         .active-chip {
-            background-color: #e8f0fe !important;
-            color: #1a73e8 !important;
-            border-color: #1a73e8 !important;
-        }
-
-        #timer-display {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 120px;
-            color: white;
-            font-weight: 500;
-            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            pointer-events: none;
-            z-index: 100;
+            background-color: var(--md-sys-color-secondary-container) !important;
+            color: var(--md-sys-color-on-secondary-container) !important;
         }
 
         .bottom-sheet {
@@ -114,16 +106,17 @@
             transition: transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
             z-index: 100;
             padding-bottom: env(safe-area-inset-bottom);
-            max-height: 90vh;
+            max-height: 92vh;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
         }
         .bottom-sheet.active { transform: translateY(0); }
 
         .sheet-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.6);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
@@ -134,61 +127,62 @@
             pointer-events: auto;
         }
 
-        /* Gallery Enhancements */
+        /* Gallery Grid */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 2px;
             overflow-y: auto;
             flex-grow: 1;
+            padding-bottom: 20px;
         }
 
         .gallery-item {
             aspect-ratio: 1;
             position: relative;
-            background: #f0f0f0;
+            background: #e1e1e1;
             cursor: pointer;
             overflow: hidden;
-        }
-
-        .gallery-item.selected {
-            padding: 8px;
-            background: var(--md-sys-color-primary);
-        }
-
-        .gallery-item.selected img, .gallery-item.selected video {
-            border-radius: 12px;
+            transition: all 0.2s;
         }
 
         .gallery-item img, .gallery-item video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.2s;
+            transition: transform 0.3s ease;
         }
 
-        .gallery-item:active img { transform: scale(0.95); }
+        .gallery-item.selected {
+            padding: 8px;
+            background: var(--md-sys-color-primary);
+        }
+        .gallery-item.selected img, .gallery-item.selected video {
+            border-radius: 12px;
+            transform: scale(0.95);
+        }
 
         .video-badge {
             position: absolute;
             bottom: 6px;
             right: 6px;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
             color: white;
             font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
-            gap: 2px;
+            gap: 4px;
         }
 
         .select-check {
             position: absolute;
-            top: 6px;
-            left: 6px;
-            width: 20px;
-            height: 20px;
+            top: 8px;
+            left: 8px;
+            width: 24px;
+            height: 24px;
             background: white;
             border-radius: 50%;
             display: flex;
@@ -197,8 +191,9 @@
             color: var(--md-sys-color-primary);
             opacity: 0;
             transform: scale(0.5);
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 10;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
 
         .selected .select-check {
@@ -206,7 +201,7 @@
             transform: scale(1);
         }
 
-        /* Lightbox */
+        /* Lightbox Viewer */
         #lightbox {
             position: fixed;
             inset: 0;
@@ -215,38 +210,43 @@
             display: none;
             flex-direction: column;
         }
-
         #lightbox.active { display: flex; }
 
+        .lightbox-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 210;
+            transition: background 0.2s;
+        }
+        .lightbox-nav-btn:hover { background: rgba(255,255,255,0.2); }
+        .lightbox-nav-btn:active { transform: translateY(-50%) scale(0.9); }
+
         .drag-handle {
-            width: 32px;
-            height: 4px;
+            width: 36px;
+            height: 5px;
             background: #e0e0e0;
-            border-radius: 2px;
+            border-radius: 3px;
             margin: 12px auto;
         }
 
-        .recording-locked {
-            opacity: 0.4 !important;
-            pointer-events: none !important;
-            filter: grayscale(1);
-        }
-
         .filter-chip {
-            padding: 6px 16px;
-            border-radius: 10px;
-            font-size: 13px;
+            padding: 8px 20px;
+            border-radius: 12px;
+            font-size: 14px;
             font-weight: 500;
             background: #f1f3f4;
-            color: #5f6368;
-            border: 1px solid transparent;
+            color: #444746;
             transition: all 0.2s;
-        }
-
-        .filter-chip.active {
-            background: #e8f0fe;
-            color: #1a73e8;
-            border-color: #1a73e8;
+            white-space: nowrap;
         }
 
         #toast {
@@ -254,21 +254,25 @@
             bottom: 120px;
             left: 50%;
             transform: translateX(-50%);
-            background: #323232;
-            color: white;
+            background: #2e2e2e;
+            color: #fff;
             padding: 12px 24px;
-            border-radius: 24px;
+            border-radius: 28px;
             font-size: 14px;
             z-index: 300;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
             pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="flex flex-col">
 
-    <!-- Main Viewport -->
+    <!-- Main Camera UI -->
     <main class="relative flex-grow overflow-hidden">
         <video id="video-preview" autoplay playsinline muted></video>
         
@@ -278,77 +282,87 @@
             <div></div><div></div><div></div>
         </div>
 
-        <div id="timer-display" class="hidden"></div>
+        <div id="timer-display" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] text-white font-medium drop-shadow-2xl pointer-events-none z-50 hidden"></div>
 
-        <!-- Top Nav -->
-        <div class="absolute top-4 left-4 right-4 z-50">
-            <div class="maps-card flex items-center h-14 px-4 gap-2">
-                <button id="flash-btn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+        <!-- Header -->
+        <div class="absolute top-4 left-4 right-4 z-40">
+            <div class="maps-card flex items-center h-14 px-3 gap-1">
+                <button id="flash-btn" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
                     <span class="material-symbols-rounded">flash_off</span>
                 </button>
-                <div class="flex-grow text-sm font-medium text-gray-700 px-2 truncate" id="recording-status">
+                <div class="flex-grow text-sm font-medium text-gray-800 px-2 truncate text-center" id="recording-status">
                     Camera Pro
                 </div>
-                <button id="settings-trigger" class="w-12 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
-                    <span class="material-symbols-rounded">tune</span>
+                <button id="settings-trigger" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+                    <span class="material-symbols-rounded">settings</span>
                 </button>
             </div>
         </div>
 
-        <!-- Bottom Controls -->
-        <div class="absolute bottom-10 left-0 w-full flex flex-col items-center gap-6 z-40">
+        <!-- Bottom UI -->
+        <div class="absolute bottom-10 left-0 w-full flex flex-col items-center gap-8 z-40">
+            <!-- Mode Switcher -->
             <div id="mode-switcher" class="maps-card flex p-1 gap-1">
-                <button id="btn-photo-mode" class="px-6 py-2 rounded-full text-sm font-medium active-chip">Photo</button>
-                <button id="btn-video-mode" class="px-6 py-2 rounded-full text-sm font-medium text-gray-600">Video</button>
+                <button id="btn-photo-mode" class="px-7 py-2 rounded-full text-sm font-medium active-chip transition-all">Photo</button>
+                <button id="btn-video-mode" class="px-7 py-2 rounded-full text-sm font-medium text-gray-600 transition-all">Video</button>
             </div>
 
-            <div class="flex items-center gap-12">
-                <button id="gallery-trigger" class="w-14 h-14 rounded-full bg-black/30 border-2 border-white/50 overflow-hidden backdrop-blur-md flex items-center justify-center shadow-lg">
-                    <span id="gallery-icon" class="material-symbols-rounded text-white opacity-80">image</span>
-                    <img id="last-capture-img" class="hidden w-full h-full object-cover">
+            <!-- Main Controls -->
+            <div class="flex items-center gap-10">
+                <!-- Gallery Thumbnail -->
+                <button id="gallery-trigger" class="w-14 h-14 rounded-2xl bg-black/40 border border-white/20 overflow-hidden backdrop-blur-xl flex items-center justify-center shadow-2xl relative">
+                    <span id="gallery-icon" class="material-symbols-rounded text-white/80 text-2xl">photo_library</span>
+                    <img id="last-capture-img" class="hidden absolute inset-0 w-full h-full object-cover">
                 </button>
 
-                <button id="shutter" class="shutter-btn shadow-xl">
+                <!-- Shutter -->
+                <button id="shutter" class="shutter-btn shadow-2xl">
                     <div class="shutter-inner"></div>
                 </button>
 
-                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center shadow-lg">
+                <!-- Flip Camera -->
+                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/40 border border-white/20 backdrop-blur-xl flex items-center justify-center shadow-2xl transition-transform active:scale-90">
                     <span class="material-symbols-rounded text-white text-3xl">flip_camera_android</span>
                 </button>
             </div>
         </div>
     </main>
 
-    <!-- Overlays -->
+    <!-- UI Components -->
     <div id="sheet-overlay" class="sheet-overlay"></div>
     <div id="toast"></div>
 
-    <!-- Settings Sheet -->
+    <!-- Settings Bottom Sheet -->
     <div id="settings-sheet" class="bottom-sheet">
         <div class="drag-handle" onclick="closeSheets()"></div>
         <div class="px-6 pb-8 space-y-6">
-            <h3 class="text-xl font-medium">Camera Settings</h3>
+            <h3 class="text-xl font-medium text-gray-900">Settings</h3>
             
             <div class="space-y-3">
-                <p class="text-sm font-medium text-gray-500">Resolution</p>
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Capture Quality</p>
                 <div class="flex gap-2">
-                    <button data-res="HD" class="res-toggle flex-1 py-3 rounded-2xl border border-gray-200 text-sm font-medium active-chip">Full HD</button>
-                    <button data-res="4K" class="res-toggle flex-1 py-3 rounded-2xl border border-gray-200 text-sm font-medium">4K Ultra</button>
+                    <button data-res="HD" class="res-toggle flex-1 py-4 rounded-2xl border border-gray-200 text-sm font-medium active-chip transition-all">Full HD</button>
+                    <button data-res="4K" class="res-toggle flex-1 py-4 rounded-2xl border border-gray-200 text-sm font-medium transition-all">4K Ultra</button>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between py-2">
-                <div class="flex items-center gap-3">
-                    <span class="material-symbols-rounded text-gray-600">grid_on</span>
-                    <span class="font-medium">Assistive Grid</span>
+            <div class="flex items-center justify-between py-2 border-y border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                        <span class="material-symbols-rounded text-blue-600">grid_4x4</span>
+                    </div>
+                    <div>
+                        <span class="block font-medium">Composition Grid</span>
+                        <span class="text-xs text-gray-500">Rule of thirds helper</span>
+                    </div>
                 </div>
-                <button id="grid-toggle" class="w-12 h-6 bg-gray-200 rounded-full relative transition-colors">
-                    <div class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
+                <button id="grid-toggle" class="w-12 h-7 bg-gray-200 rounded-full relative transition-colors duration-300">
+                    <div class="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm"></div>
                 </button>
             </div>
 
             <div class="space-y-3">
-                <p class="text-sm font-medium text-gray-500">Timer</p>
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Self Timer</p>
                 <div class="flex gap-2">
                     <button data-timer="0" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm active-chip">Off</button>
                     <button data-timer="3" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">3s</button>
@@ -358,25 +372,28 @@
         </div>
     </div>
 
-    <!-- Gallery Sheet -->
+    <!-- Gallery Bottom Sheet -->
     <div id="gallery-sheet" class="bottom-sheet">
         <div class="drag-handle" onclick="closeSheets()"></div>
         
-        <!-- Gallery Header -->
-        <div class="px-6 pb-4">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="gallery-title" class="text-xl font-medium">Gallery</h3>
-                <div class="flex gap-2" id="gallery-actions-default">
-                    <button id="btn-select-mode" class="p-2 text-gray-600 rounded-full hover:bg-gray-100">
+        <div class="px-5 pb-4">
+            <div class="flex justify-between items-center mb-5">
+                <h3 id="gallery-title" class="text-xl font-medium text-gray-900">Gallery</h3>
+                
+                <!-- Default Actions -->
+                <div class="flex gap-1" id="gallery-actions-default">
+                    <button id="btn-select-mode" class="p-2.5 text-gray-700 rounded-full hover:bg-gray-100">
                         <span class="material-symbols-rounded">checklist</span>
                     </button>
-                    <button id="bulk-download" class="p-2 text-blue-600 rounded-full hover:bg-blue-50">
+                    <button id="bulk-download" class="p-2.5 text-blue-600 rounded-full hover:bg-blue-50">
                         <span class="material-symbols-rounded">download_for_offline</span>
                     </button>
                 </div>
-                <!-- Selection Actions (Initially Hidden) -->
-                <div class="flex gap-2 hidden" id="gallery-actions-selection">
-                    <span id="selection-count" class="text-sm font-medium text-blue-600 mr-2 flex items-center">0 selected</span>
+
+                <!-- Selection Actions -->
+                <div class="flex items-center gap-2 hidden" id="gallery-actions-selection">
+                    <button id="btn-select-all" class="text-sm font-medium text-blue-600 px-3 py-1.5 rounded-full hover:bg-blue-50">Select All</button>
+                    <div class="h-6 w-px bg-gray-200 mx-1"></div>
                     <button id="btn-download-selected" class="p-2 text-blue-600 rounded-full hover:bg-blue-50">
                         <span class="material-symbols-rounded">download</span>
                     </button>
@@ -389,48 +406,70 @@
                 </div>
             </div>
 
+            <!-- Dynamic Counter in selection mode -->
+            <div id="selection-banner" class="hidden mb-4 py-2 px-4 bg-blue-50 text-blue-700 rounded-2xl text-sm font-medium flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                <span id="selection-count">0 selected</span>
+            </div>
+
             <!-- Filters -->
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button class="filter-chip active" data-filter="all">All</button>
+                <button class="filter-chip active-chip" data-filter="all">All media</button>
                 <button class="filter-chip" data-filter="image">Photos</button>
                 <button class="filter-chip" data-filter="video">Videos</button>
             </div>
         </div>
 
-        <!-- Content -->
+        <!-- Media Grid -->
         <div id="gallery-content" class="gallery-grid"></div>
         
-        <div id="empty-gallery" class="py-20 text-center text-gray-400 hidden">
-            <span class="material-symbols-rounded text-4xl block mb-2">image_not_supported</span>
-            <p>Your gallery is empty</p>
+        <div id="empty-gallery" class="py-24 text-center text-gray-400 hidden">
+            <span class="material-symbols-rounded text-5xl block mb-3 opacity-30">photo_library</span>
+            <p class="font-medium">No media captured yet</p>
+            <p class="text-sm opacity-60">Photos and videos will appear here</p>
         </div>
     </div>
 
     <!-- Lightbox Viewer -->
     <div id="lightbox">
-        <div class="flex justify-between items-center p-4 text-white z-50">
-            <button id="lightbox-close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10">
-                <span class="material-symbols-rounded">arrow_back</span>
+        <!-- Lightbox Toolbar -->
+        <div class="flex justify-between items-center p-4 text-white z-50 bg-gradient-to-b from-black/60 to-transparent">
+            <button id="lightbox-close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20">
+                <span class="material-symbols-rounded">close</span>
             </button>
             <div id="lightbox-meta" class="text-center">
-                <p class="text-sm font-medium" id="lightbox-date">Date</p>
-                <p class="text-xs opacity-60" id="lightbox-time">Time</p>
+                <p class="text-sm font-medium" id="lightbox-date">Jan 01, 2024</p>
+                <p class="text-[10px] opacity-60 uppercase tracking-widest" id="lightbox-time">12:00 PM</p>
             </div>
             <div class="flex gap-2">
-                <button id="lightbox-share" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10">
+                <button id="lightbox-share" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20">
                     <span class="material-symbols-rounded">share</span>
                 </button>
-                <button id="lightbox-delete" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-red-400">
+                <button id="lightbox-delete" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-red-400">
                     <span class="material-symbols-rounded">delete</span>
                 </button>
             </div>
         </div>
-        <div class="flex-grow flex items-center justify-center p-2 relative overflow-hidden" id="lightbox-main">
-            <!-- Media injected here -->
+
+        <!-- Lightbox Main Content -->
+        <div class="flex-grow flex items-center justify-center relative group">
+            <!-- Navigation Buttons -->
+            <button id="lightbox-prev" class="lightbox-nav-btn left-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span class="material-symbols-rounded text-3xl">chevron_left</span>
+            </button>
+            
+            <div id="lightbox-main" class="w-full h-full flex items-center justify-center p-4">
+                <!-- Media injected here -->
+            </div>
+
+            <button id="lightbox-next" class="lightbox-nav-btn right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span class="material-symbols-rounded text-3xl">chevron_right</span>
+            </button>
         </div>
-        <div class="p-6 flex justify-center pb-12">
-            <button id="lightbox-download" class="px-8 py-3 bg-white text-black rounded-full font-medium flex items-center gap-2">
-                <span class="material-symbols-rounded">download</span>
+
+        <!-- Lightbox Footer -->
+        <div class="p-6 pb-12 flex justify-center bg-gradient-to-t from-black/60 to-transparent">
+            <button id="lightbox-download" class="px-10 py-3.5 bg-white text-black rounded-full font-medium flex items-center gap-2 shadow-xl active:scale-95 transition-transform">
+                <span class="material-symbols-rounded fill-icon">download</span>
                 Save to device
             </button>
         </div>
@@ -458,7 +497,11 @@
             selectionMode: false,
             selectedIds: new Set(),
             currentFilter: 'all',
-            currentViewingItem: null
+            // Lightbox State
+            lightboxIndex: -1,
+            get currentViewingItems() {
+                return this.galleryItems.filter(i => this.currentFilter === 'all' || i.type === this.currentFilter);
+            }
         };
 
         const els = {
@@ -485,11 +528,13 @@
             emptyGallery: document.getElementById('empty-gallery'),
             bulkDownload: document.getElementById('bulk-download'),
             toast: document.getElementById('toast'),
-            // New Gallery Elements
+            // Gallery selection
             btnSelectMode: document.getElementById('btn-select-mode'),
             btnCancelSelection: document.getElementById('btn-cancel-selection'),
+            btnSelectAll: document.getElementById('btn-select-all'),
             actionsDefault: document.getElementById('gallery-actions-default'),
             actionsSelection: document.getElementById('gallery-actions-selection'),
+            selectionBanner: document.getElementById('selection-banner'),
             selectionCount: document.getElementById('selection-count'),
             btnDeleteSelected: document.getElementById('btn-delete-selected'),
             btnDownloadSelected: document.getElementById('btn-download-selected'),
@@ -501,7 +546,9 @@
             lightboxTime: document.getElementById('lightbox-time'),
             lightboxDelete: document.getElementById('lightbox-delete'),
             lightboxDownload: document.getElementById('lightbox-download'),
-            lightboxShare: document.getElementById('lightbox-share')
+            lightboxShare: document.getElementById('lightbox-share'),
+            lightboxPrev: document.getElementById('lightbox-prev'),
+            lightboxNext: document.getElementById('lightbox-next')
         };
 
         // --- Database ---
@@ -521,7 +568,7 @@
             });
         };
 
-        // --- Camera Logic ---
+        // --- Camera Core ---
         async function startCamera() {
             if (state.stream) {
                 state.stream.getTracks().forEach(t => t.stop());
@@ -542,11 +589,10 @@
                 const actualFacing = state.stream.getVideoTracks()[0].getSettings().facingMode;
                 els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
             } catch (err) {
-                showToast("Camera access denied");
+                showToast("Camera blocked or unavailable");
             }
         }
 
-        // --- Core Actions ---
         function takePhoto() {
             if (!els.video.videoWidth) return;
             els.canvas.width = els.video.videoWidth;
@@ -560,7 +606,7 @@
             ctx.drawImage(els.video, 0, 0);
             
             els.canvas.toBlob(blob => saveToGallery(blob, 'image'), 'image/jpeg', 0.95);
-            els.video.style.filter = 'brightness(2)';
+            els.video.style.filter = 'brightness(2) contrast(0.8)';
             setTimeout(() => els.video.style.filter = '', 100);
         }
 
@@ -577,7 +623,7 @@
                     saveToGallery(blob, 'video');
                     clearInterval(recordInterval);
                     els.status.textContent = "Camera Pro";
-                    els.status.classList.remove('text-red-500');
+                    els.status.classList.remove('text-red-600');
                     setRecordingLock(false);
                 };
 
@@ -585,14 +631,14 @@
                 state.isRecording = true;
                 setRecordingLock(true);
                 els.shutter.classList.add('recording');
-                els.status.classList.add('text-red-500');
+                els.status.classList.add('text-red-600');
                 
                 startTime = Date.now();
                 recordInterval = setInterval(() => {
                     const diff = Math.floor((Date.now() - startTime) / 1000);
                     const m = Math.floor(diff/60).toString().padStart(2, '0');
                     const s = (diff%60).toString().padStart(2, '0');
-                    els.status.textContent = `Recording • ${m}:${s}`;
+                    els.status.textContent = `REC • ${m}:${s}`;
                 }, 1000);
             } else {
                 state.mediaRecorder.stop();
@@ -613,10 +659,8 @@
             };
             store.add(item);
             
-            const url = URL.createObjectURL(blob);
-            els.lastThumb.src = url;
-            els.lastThumb.classList.remove('hidden');
-            els.galleryIcon.classList.add('hidden');
+            await loadGalleryItems();
+            updateThumb();
             showToast(type === 'image' ? "Photo saved" : "Video saved");
         }
 
@@ -640,74 +684,93 @@
                 els.emptyGallery.classList.remove('hidden');
             } else {
                 els.emptyGallery.classList.add('hidden');
-                filtered.forEach(item => {
+                filtered.forEach((item, index) => {
                     const div = document.createElement('div');
                     div.className = `gallery-item ${state.selectedIds.has(item.id) ? 'selected' : ''}`;
                     const url = URL.createObjectURL(item.blob);
                     
                     div.innerHTML = `
                         <div class="select-check">
-                            <span class="material-symbols-rounded" style="font-size:16px;">check</span>
+                            <span class="material-symbols-rounded" style="font-size:16px; font-weight:700;">check</span>
                         </div>
                         ${item.type === 'image' ? `<img src="${url}" loading="lazy">` : `<video src="${url}"></video><div class="video-badge"><span class="material-symbols-rounded" style="font-size:12px;">play_arrow</span>VIDEO</div>`}
                     `;
 
-                    div.onclick = () => handleItemClick(item);
+                    div.onclick = () => {
+                        if (state.selectionMode) {
+                            if (state.selectedIds.has(item.id)) state.selectedIds.delete(item.id);
+                            else state.selectedIds.add(item.id);
+                            updateSelectionUI();
+                            renderGallery();
+                        } else {
+                            openLightbox(index);
+                        }
+                    };
                     els.galleryContent.appendChild(div);
                 });
             }
         }
 
-        function handleItemClick(item) {
-            if (state.selectionMode) {
-                if (state.selectedIds.has(item.id)) state.selectedIds.delete(item.id);
-                else state.selectedIds.add(item.id);
-                updateSelectionUI();
-                renderGallery();
-            } else {
-                openLightbox(item);
-            }
+        // --- Lightbox Functions ---
+        function openLightbox(index) {
+            state.lightboxIndex = index;
+            els.lightbox.classList.add('active');
+            updateLightboxContent();
         }
 
-        // --- Lightbox Functions ---
-        function openLightbox(item) {
-            state.currentViewingItem = item;
+        function updateLightboxContent() {
+            const items = state.currentViewingItems;
+            const item = items[state.lightboxIndex];
+            if (!item) return;
+
             els.lightboxMain.innerHTML = '';
             const url = URL.createObjectURL(item.blob);
             
             if (item.type === 'image') {
                 const img = document.createElement('img');
                 img.src = url;
-                img.className = 'max-w-full max-h-full object-contain';
+                img.className = 'max-w-full max-h-full object-contain animate-in fade-in zoom-in-95 duration-300';
                 els.lightboxMain.appendChild(img);
             } else {
                 const video = document.createElement('video');
                 video.src = url;
                 video.controls = true;
                 video.autoplay = true;
-                video.className = 'max-w-full max-h-full';
+                video.className = 'max-w-full max-h-full animate-in fade-in duration-300';
                 els.lightboxMain.appendChild(video);
             }
 
             const d = new Date(item.timestamp);
-            els.lightboxDate.textContent = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+            els.lightboxDate.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
             els.lightboxTime.textContent = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
-            els.lightbox.classList.add('active');
+            // Toggle Nav visibility
+            els.lightboxPrev.style.display = state.lightboxIndex > 0 ? 'flex' : 'none';
+            els.lightboxNext.style.display = state.lightboxIndex < items.length - 1 ? 'flex' : 'none';
+        }
+
+        function navigateLightbox(dir) {
+            const items = state.currentViewingItems;
+            const newIndex = state.lightboxIndex + dir;
+            if (newIndex >= 0 && newIndex < items.length) {
+                state.lightboxIndex = newIndex;
+                updateLightboxContent();
+            }
         }
 
         function closeLightbox() {
             els.lightbox.classList.remove('active');
             els.lightboxMain.innerHTML = '';
-            state.currentViewingItem = null;
+            state.lightboxIndex = -1;
         }
 
-        // --- Selection & Batch Actions ---
+        // --- Selection Logic ---
         function toggleSelectionMode(active) {
             state.selectionMode = active;
             state.selectedIds.clear();
             els.actionsDefault.classList.toggle('hidden', active);
             els.actionsSelection.classList.toggle('hidden', !active);
+            els.selectionBanner.classList.toggle('hidden', !active);
             updateSelectionUI();
             renderGallery();
         }
@@ -724,7 +787,7 @@
                 await loadGalleryItems();
                 renderGallery();
                 updateThumb();
-                showToast("Items deleted");
+                showToast(`${ids.length} items deleted`);
             };
         }
 
@@ -735,26 +798,33 @@
                 a.download = items[0].filename;
                 a.click();
             } else {
+                showToast("Generating ZIP...");
                 const zip = new JSZip();
                 items.forEach(item => zip.file(item.filename, item.blob));
                 const content = await zip.generateAsync({ type: "blob" });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(content);
-                a.download = `CameraPro_Export_${Date.now()}.zip`;
+                a.download = `CameraPro_Batch_${Date.now()}.zip`;
                 a.click();
+                showToast("Download started");
             }
         }
 
-        // --- UI Utils ---
+        // --- Helpers ---
         function showToast(msg) {
             els.toast.textContent = msg;
             els.toast.style.opacity = '1';
-            setTimeout(() => els.toast.style.opacity = '0', 2000);
+            els.toast.style.transform = 'translateX(-50%) translateY(-10px)';
+            setTimeout(() => {
+                els.toast.style.opacity = '0';
+                els.toast.style.transform = 'translateX(-50%) translateY(0)';
+            }, 2500);
         }
 
         function setRecordingLock(locked) {
-            [els.flip, els.modeSwitcher, els.settingsTrigger].forEach(el => {
-                el.classList.toggle('recording-locked', locked);
+            [els.flip, els.modeSwitcher, els.settingsTrigger, els.galleryTrigger].forEach(el => {
+                el.style.pointerEvents = locked ? 'none' : 'auto';
+                el.style.opacity = locked ? '0.3' : '1';
             });
         }
 
@@ -807,7 +877,6 @@
         };
 
         els.settingsTrigger.onclick = () => {
-            if (state.isRecording) return;
             els.settingsSheet.classList.add('active');
             els.overlay.classList.add('active');
         };
@@ -833,18 +902,20 @@
             startCamera();
         };
 
-        document.querySelectorAll('.filter-chip').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active-chip'));
-                btn.classList.add('active-chip');
-                state.currentFilter = btn.dataset.filter;
-                renderGallery();
-            };
-        });
-
         // Selection Handlers
         els.btnSelectMode.onclick = () => toggleSelectionMode(true);
         els.btnCancelSelection.onclick = () => toggleSelectionMode(false);
+        els.btnSelectAll.onclick = () => {
+            const filtered = state.currentViewingItems;
+            if (state.selectedIds.size === filtered.length) {
+                state.selectedIds.clear();
+            } else {
+                filtered.forEach(item => state.selectedIds.add(item.id));
+            }
+            updateSelectionUI();
+            renderGallery();
+        };
+
         els.btnDeleteSelected.onclick = () => {
             if (state.selectedIds.size === 0) return;
             deleteItems([...state.selectedIds]);
@@ -858,27 +929,32 @@
 
         // Lightbox Handlers
         els.lightboxClose.onclick = closeLightbox;
+        els.lightboxPrev.onclick = () => navigateLightbox(-1);
+        els.lightboxNext.onclick = () => navigateLightbox(1);
         els.lightboxDelete.onclick = () => {
-            if (state.currentViewingItem) {
-                deleteItems([state.currentViewingItem.id]);
+            const item = state.currentViewingItems[state.lightboxIndex];
+            if (item) {
+                deleteItems([item.id]);
                 closeLightbox();
             }
         };
         els.lightboxDownload.onclick = () => {
-            if (state.currentViewingItem) downloadItems([state.currentViewingItem]);
+            const item = state.currentViewingItems[state.lightboxIndex];
+            if (item) downloadItems([item]);
         };
         els.lightboxShare.onclick = async () => {
-            if (!state.currentViewingItem || !navigator.share) {
-                showToast("Sharing not supported");
+            const item = state.currentViewingItems[state.lightboxIndex];
+            if (!item || !navigator.share) {
+                showToast("Sharing not supported on this device");
                 return;
             }
-            const file = new File([state.currentViewingItem.blob], state.currentViewingItem.filename, { type: state.currentViewingItem.blob.type });
+            const file = new File([item.blob], item.filename, { type: item.blob.type });
             try {
-                await navigator.share({ files: [file], title: 'Shared from Camera Pro' });
+                await navigator.share({ files: [file], title: 'Camera Pro' });
             } catch (e) { console.error(e); }
         };
 
-        // Standard settings
+        // Settings Toggles
         document.querySelectorAll('.res-toggle').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.res-toggle').forEach(b => b.classList.remove('active-chip'));
@@ -892,7 +968,7 @@
             state.settings.grid = !state.settings.grid;
             els.grid.style.opacity = state.settings.grid ? '1' : '0';
             els.gridToggle.classList.toggle('bg-blue-600', state.settings.grid);
-            els.gridToggle.querySelector('.dot').style.transform = state.settings.grid ? 'translateX(24px)' : 'translateX(0)';
+            els.gridToggle.querySelector('.dot').style.transform = state.settings.grid ? 'translateX(20px)' : 'translateX(0)';
         };
 
         document.querySelectorAll('.timer-btn').forEach(btn => {
@@ -900,6 +976,15 @@
                 document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active-chip'));
                 btn.classList.add('active-chip');
                 state.settings.timer = parseInt(btn.dataset.timer);
+            };
+        });
+
+        document.querySelectorAll('.filter-chip').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.currentFilter = btn.dataset.filter;
+                renderGallery();
             };
         });
 
@@ -913,6 +998,14 @@
                 els.flash.classList.toggle('text-yellow-500', state.flash);
             } else showToast("Flash not supported");
         };
+
+        // Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            if (!els.lightbox.classList.contains('active')) return;
+            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+            if (e.key === 'Escape') closeLightbox();
+        });
 
         window.onload = async () => {
             await initDB();
