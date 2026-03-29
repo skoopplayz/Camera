@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Material Camera Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <style>
+        :root {
+            --md-sys-color-primary: #1a73e8;
+            --md-sys-color-surface: #ffffff;
+            --md-sys-color-surface-container: #f1f3f4;
+            --md-sys-color-on-surface: #202124;
+            --md-sys-color-error: #b3261e;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--md-sys-color-on-surface);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        #video-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .maps-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .shutter-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid white;
+            padding: 6px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .shutter-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: white;
+            transition: all 0.3s;
+        }
+
+        .mode-video .shutter-inner { background-color: #d93025; }
+        
+        .recording .shutter-inner {
+            border-radius: 8px;
+            transform: scale(0.6);
+        }
+
+        #camera-grid {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.15); }
+
+        .active-chip {
+            background-color: #e8f0fe !important;
+            color: #1a73e8 !important;
+            border-color: #1a73e8 !important;
+        }
+
+        #timer-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            color: white;
+            font-weight: 500;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-radius: 28px 28px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .bottom-sheet.active { transform: translateY(0); }
+
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 90;
+        }
+        .sheet-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Gallery Enhancements */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            position: relative;
+            background: #f0f0f0;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .gallery-item.selected {
+            padding: 8px;
+            background: var(--md-sys-color-primary);
+        }
+
+        .gallery-item.selected img, .gallery-item.selected video {
+            border-radius: 12px;
+        }
+
+        .gallery-item img, .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.2s;
+        }
+
+        .gallery-item:active img { transform: scale(0.95); }
+
+        .video-badge {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .select-check {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--md-sys-color-primary);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .selected .select-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Lightbox */
+        #lightbox {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+        }
+
+        #lightbox.active { display: flex; }
+
+        .drag-handle {
+            width: 32px;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin: 12px auto;
+        }
+
+        .recording-locked {
+            opacity: 0.4 !important;
+            pointer-events: none !important;
+            filter: grayscale(1);
+        }
+
+        .filter-chip {
+            padding: 6px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            background: #f1f3f4;
+            color: #5f6368;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .filter-chip.active {
+            background: #e8f0fe;
+            color: #1a73e8;
+            border-color: #1a73e8;
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #323232;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            z-index: 300;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Main Viewport -->
+    <main class="relative flex-grow overflow-hidden">
+        <video id="video-preview" autoplay playsinline muted></video>
+        
+        <div id="camera-grid">
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+        </div>
+
+        <div id="timer-display" class="hidden"></div>
+
+        <!-- Top Nav -->
+        <div class="absolute top-4 left-4 right-4 z-50">
+            <div class="maps-card flex items-center h-14 px-4 gap-2">
+                <button id="flash-btn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <span class="material-symbols-rounded">flash_off</span>
+                </button>
+                <div class="flex-grow text-sm font-medium text-gray-700 px-2 truncate" id="recording-status">
+                    Camera Pro
+                </div>
+                <button id="settings-trigger" class="w-12 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <span class="material-symbols-rounded">tune</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="absolute bottom-10 left-0 w-full flex flex-col items-center gap-6 z-40">
+            <div id="mode-switcher" class="maps-card flex p-1 gap-1">
+                <button id="btn-photo-mode" class="px-6 py-2 rounded-full text-sm font-medium active-chip">Photo</button>
+                <button id="btn-video-mode" class="px-6 py-2 rounded-full text-sm font-medium text-gray-600">Video</button>
+            </div>
+
+            <div class="flex items-center gap-12">
+                <button id="gallery-trigger" class="w-14 h-14 rounded-full bg-black/30 border-2 border-white/50 overflow-hidden backdrop-blur-md flex items-center justify-center shadow-lg">
+                    <span id="gallery-icon" class="material-symbols-rounded text-white opacity-80">image</span>
+                    <img id="last-capture-img" class="hidden w-full h-full object-cover">
+                </button>
+
+                <button id="shutter" class="shutter-btn shadow-xl">
+                    <div class="shutter-inner"></div>
+                </button>
+
+                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center shadow-lg">
+                    <span class="material-symbols-rounded text-white text-3xl">flip_camera_android</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Overlays -->
+    <div id="sheet-overlay" class="sheet-overlay"></div>
+    <div id="toast"></div>
+
+    <!-- Settings Sheet -->
+    <div id="settings-sheet" class="bottom-sheet">
+        <div class="drag-handle" onclick="closeSheets()"></div>
+        <div class="px-6 pb-8 space-y-6">
+            <h3 class="text-xl font-medium">Camera Settings</h3>
+            
+            <div class="space-y-3">
+                <p class="text-sm font-medium text-gray-500">Resolution</p>
+                <div class="flex gap-2">
+                    <button data-res="HD" class="res-toggle flex-1 py-3 rounded-2xl border border-gray-200 text-sm font-medium active-chip">Full HD</button>
+                    <button data-res="4K" class="res-toggle flex-1 py-3 rounded-2xl border border-gray-200 text-sm font-medium">4K Ultra</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-rounded text-gray-600">grid_on</span>
+                    <span class="font-medium">Assistive Grid</span>
+                </div>
+                <button id="grid-toggle" class="w-12 h-6 bg-gray-200 rounded-full relative transition-colors">
+                    <div class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <p class="text-sm font-medium text-gray-500">Timer</p>
+                <div class="flex gap-2">
+                    <button data-timer="0" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm active-chip">Off</button>
+                    <button data-timer="3" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">3s</button>
+                    <button data-timer="10" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">10s</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Sheet -->
+    <div id="gallery-sheet" class="bottom-sheet">
+        <div class="drag-handle" onclick="closeSheets()"></div>
+        
+        <!-- Gallery Header -->
+        <div class="px-6 pb-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="gallery-title" class="text-xl font-medium">Gallery</h3>
+                <div class="flex gap-2" id="gallery-actions-default">
+                    <button id="btn-select-mode" class="p-2 text-gray-600 rounded-full hover:bg-gray-100">
+                        <span class="material-symbols-rounded">checklist</span>
+                    </button>
+                    <button id="bulk-download" class="p-2 text-blue-600 rounded-full hover:bg-blue-50">
+                        <span class="material-symbols-rounded">download_for_offline</span>
+                    </button>
+                </div>
+                <!-- Selection Actions (Initially Hidden) -->
+                <div class="flex gap-2 hidden" id="gallery-actions-selection">
+                    <span id="selection-count" class="text-sm font-medium text-blue-600 mr-2 flex items-center">0 selected</span>
+                    <button id="btn-download-selected" class="p-2 text-blue-600 rounded-full hover:bg-blue-50">
+                        <span class="material-symbols-rounded">download</span>
+                    </button>
+                    <button id="btn-delete-selected" class="p-2 text-red-500 rounded-full hover:bg-red-50">
+                        <span class="material-symbols-rounded">delete</span>
+                    </button>
+                    <button id="btn-cancel-selection" class="p-2 text-gray-500 rounded-full hover:bg-gray-100">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button class="filter-chip active" data-filter="all">All</button>
+                <button class="filter-chip" data-filter="image">Photos</button>
+                <button class="filter-chip" data-filter="video">Videos</button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div id="gallery-content" class="gallery-grid"></div>
+        
+        <div id="empty-gallery" class="py-20 text-center text-gray-400 hidden">
+            <span class="material-symbols-rounded text-4xl block mb-2">image_not_supported</span>
+            <p>Your gallery is empty</p>
+        </div>
+    </div>
+
+    <!-- Lightbox Viewer -->
+    <div id="lightbox">
+        <div class="flex justify-between items-center p-4 text-white z-50">
+            <button id="lightbox-close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </button>
+            <div id="lightbox-meta" class="text-center">
+                <p class="text-sm font-medium" id="lightbox-date">Date</p>
+                <p class="text-xs opacity-60" id="lightbox-time">Time</p>
+            </div>
+            <div class="flex gap-2">
+                <button id="lightbox-share" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10">
+                    <span class="material-symbols-rounded">share</span>
+                </button>
+                <button id="lightbox-delete" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-red-400">
+                    <span class="material-symbols-rounded">delete</span>
+                </button>
+            </div>
+        </div>
+        <div class="flex-grow flex items-center justify-center p-2 relative overflow-hidden" id="lightbox-main">
+            <!-- Media injected here -->
+        </div>
+        <div class="p-6 flex justify-center pb-12">
+            <button id="lightbox-download" class="px-8 py-3 bg-white text-black rounded-full font-medium flex items-center gap-2">
+                <span class="material-symbols-rounded">download</span>
+                Save to device
+            </button>
+        </div>
+    </div>
+
+    <canvas id="capture-canvas" class="hidden"></canvas>
+
+    <script>
+        const DB_NAME = "CameraProDB";
+        const STORE_NAME = "media";
+        let db;
+
+        const state = {
+            stream: null,
+            mode: 'photo',
+            isRecording: false,
+            facingMode: 'environment', 
+            flash: false,
+            mediaRecorder: null,
+            chunks: [],
+            settings: { res: 'HD', grid: false, timer: 0 },
+            timerRunning: false,
+            // Gallery State
+            galleryItems: [],
+            selectionMode: false,
+            selectedIds: new Set(),
+            currentFilter: 'all',
+            currentViewingItem: null
+        };
+
+        const els = {
+            video: document.getElementById('video-preview'),
+            shutter: document.getElementById('shutter'),
+            modePhoto: document.getElementById('btn-photo-mode'),
+            modeVideo: document.getElementById('btn-video-mode'),
+            modeSwitcher: document.getElementById('mode-switcher'),
+            flash: document.getElementById('flash-btn'),
+            flip: document.getElementById('flip-btn'),
+            canvas: document.getElementById('capture-canvas'),
+            settingsTrigger: document.getElementById('settings-trigger'),
+            settingsSheet: document.getElementById('settings-sheet'),
+            galleryTrigger: document.getElementById('gallery-trigger'),
+            gallerySheet: document.getElementById('gallery-sheet'),
+            overlay: document.getElementById('sheet-overlay'),
+            grid: document.getElementById('camera-grid'),
+            gridToggle: document.getElementById('grid-toggle'),
+            timerDisplay: document.getElementById('timer-display'),
+            lastThumb: document.getElementById('last-capture-img'),
+            galleryIcon: document.getElementById('gallery-icon'),
+            status: document.getElementById('recording-status'),
+            galleryContent: document.getElementById('gallery-content'),
+            emptyGallery: document.getElementById('empty-gallery'),
+            bulkDownload: document.getElementById('bulk-download'),
+            toast: document.getElementById('toast'),
+            // New Gallery Elements
+            btnSelectMode: document.getElementById('btn-select-mode'),
+            btnCancelSelection: document.getElementById('btn-cancel-selection'),
+            actionsDefault: document.getElementById('gallery-actions-default'),
+            actionsSelection: document.getElementById('gallery-actions-selection'),
+            selectionCount: document.getElementById('selection-count'),
+            btnDeleteSelected: document.getElementById('btn-delete-selected'),
+            btnDownloadSelected: document.getElementById('btn-download-selected'),
+            // Lightbox
+            lightbox: document.getElementById('lightbox'),
+            lightboxMain: document.getElementById('lightbox-main'),
+            lightboxClose: document.getElementById('lightbox-close'),
+            lightboxDate: document.getElementById('lightbox-date'),
+            lightboxTime: document.getElementById('lightbox-time'),
+            lightboxDelete: document.getElementById('lightbox-delete'),
+            lightboxDownload: document.getElementById('lightbox-download'),
+            lightboxShare: document.getElementById('lightbox-share')
+        };
+
+        // --- Database ---
+        const initDB = () => {
+            return new Promise((resolve) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve();
+                };
+            });
+        };
+
+        // --- Camera Logic ---
+        async function startCamera() {
+            if (state.stream) {
+                state.stream.getTracks().forEach(t => t.stop());
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: state.facingMode,
+                    width: state.settings.res === '4K' ? { ideal: 3840 } : { ideal: 1920 },
+                    height: state.settings.res === '4K' ? { ideal: 2160 } : { ideal: 1080 }
+                },
+                audio: true
+            };
+
+            try {
+                state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                els.video.srcObject = state.stream;
+                const actualFacing = state.stream.getVideoTracks()[0].getSettings().facingMode;
+                els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+            } catch (err) {
+                showToast("Camera access denied");
+            }
+        }
+
+        // --- Core Actions ---
+        function takePhoto() {
+            if (!els.video.videoWidth) return;
+            els.canvas.width = els.video.videoWidth;
+            els.canvas.height = els.video.videoHeight;
+            const ctx = els.canvas.getContext('2d');
+            
+            if (state.facingMode === 'user') {
+                ctx.translate(els.canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(els.video, 0, 0);
+            
+            els.canvas.toBlob(blob => saveToGallery(blob, 'image'), 'image/jpeg', 0.95);
+            els.video.style.filter = 'brightness(2)';
+            setTimeout(() => els.video.style.filter = '', 100);
+        }
+
+        let recordInterval, startTime;
+        function toggleRecording() {
+            if (!state.isRecording) {
+                state.chunks = [];
+                let mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm;codecs=vp9,opus';
+                
+                state.mediaRecorder = new MediaRecorder(state.stream, { mimeType });
+                state.mediaRecorder.ondataavailable = e => state.chunks.push(e.data);
+                state.mediaRecorder.onstop = () => {
+                    const blob = new Blob(state.chunks, { type: state.mediaRecorder.mimeType });
+                    saveToGallery(blob, 'video');
+                    clearInterval(recordInterval);
+                    els.status.textContent = "Camera Pro";
+                    els.status.classList.remove('text-red-500');
+                    setRecordingLock(false);
+                };
+
+                state.mediaRecorder.start();
+                state.isRecording = true;
+                setRecordingLock(true);
+                els.shutter.classList.add('recording');
+                els.status.classList.add('text-red-500');
+                
+                startTime = Date.now();
+                recordInterval = setInterval(() => {
+                    const diff = Math.floor((Date.now() - startTime) / 1000);
+                    const m = Math.floor(diff/60).toString().padStart(2, '0');
+                    const s = (diff%60).toString().padStart(2, '0');
+                    els.status.textContent = `Recording • ${m}:${s}`;
+                }, 1000);
+            } else {
+                state.mediaRecorder.stop();
+                state.isRecording = false;
+                els.shutter.classList.remove('recording');
+            }
+        }
+
+        // --- Gallery Engine ---
+        async function saveToGallery(blob, type) {
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            const store = transaction.objectStore(STORE_NAME);
+            const item = {
+                blob: blob,
+                type: type,
+                timestamp: Date.now(),
+                filename: `${type === 'image' ? 'IMG' : 'VID'}_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`
+            };
+            store.add(item);
+            
+            const url = URL.createObjectURL(blob);
+            els.lastThumb.src = url;
+            els.lastThumb.classList.remove('hidden');
+            els.galleryIcon.classList.add('hidden');
+            showToast(type === 'image' ? "Photo saved" : "Video saved");
+        }
+
+        async function loadGalleryItems() {
+            return new Promise(resolve => {
+                const transaction = db.transaction([STORE_NAME], "readonly");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    state.galleryItems = request.result.sort((a,b) => b.timestamp - a.timestamp);
+                    resolve(state.galleryItems);
+                };
+            });
+        }
+
+        function renderGallery() {
+            els.galleryContent.innerHTML = '';
+            const filtered = state.galleryItems.filter(i => state.currentFilter === 'all' || i.type === state.currentFilter);
+            
+            if (filtered.length === 0) {
+                els.emptyGallery.classList.remove('hidden');
+            } else {
+                els.emptyGallery.classList.add('hidden');
+                filtered.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = `gallery-item ${state.selectedIds.has(item.id) ? 'selected' : ''}`;
+                    const url = URL.createObjectURL(item.blob);
+                    
+                    div.innerHTML = `
+                        <div class="select-check">
+                            <span class="material-symbols-rounded" style="font-size:16px;">check</span>
+                        </div>
+                        ${item.type === 'image' ? `<img src="${url}" loading="lazy">` : `<video src="${url}"></video><div class="video-badge"><span class="material-symbols-rounded" style="font-size:12px;">play_arrow</span>VIDEO</div>`}
+                    `;
+
+                    div.onclick = () => handleItemClick(item);
+                    els.galleryContent.appendChild(div);
+                });
+            }
+        }
+
+        function handleItemClick(item) {
+            if (state.selectionMode) {
+                if (state.selectedIds.has(item.id)) state.selectedIds.delete(item.id);
+                else state.selectedIds.add(item.id);
+                updateSelectionUI();
+                renderGallery();
+            } else {
+                openLightbox(item);
+            }
+        }
+
+        // --- Lightbox Functions ---
+        function openLightbox(item) {
+            state.currentViewingItem = item;
+            els.lightboxMain.innerHTML = '';
+            const url = URL.createObjectURL(item.blob);
+            
+            if (item.type === 'image') {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'max-w-full max-h-full object-contain';
+                els.lightboxMain.appendChild(img);
+            } else {
+                const video = document.createElement('video');
+                video.src = url;
+                video.controls = true;
+                video.autoplay = true;
+                video.className = 'max-w-full max-h-full';
+                els.lightboxMain.appendChild(video);
+            }
+
+            const d = new Date(item.timestamp);
+            els.lightboxDate.textContent = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+            els.lightboxTime.textContent = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+            els.lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            els.lightbox.classList.remove('active');
+            els.lightboxMain.innerHTML = '';
+            state.currentViewingItem = null;
+        }
+
+        // --- Selection & Batch Actions ---
+        function toggleSelectionMode(active) {
+            state.selectionMode = active;
+            state.selectedIds.clear();
+            els.actionsDefault.classList.toggle('hidden', active);
+            els.actionsSelection.classList.toggle('hidden', !active);
+            updateSelectionUI();
+            renderGallery();
+        }
+
+        function updateSelectionUI() {
+            els.selectionCount.textContent = `${state.selectedIds.size} selected`;
+        }
+
+        async function deleteItems(ids) {
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            const store = transaction.objectStore(STORE_NAME);
+            ids.forEach(id => store.delete(id));
+            transaction.oncomplete = async () => {
+                await loadGalleryItems();
+                renderGallery();
+                updateThumb();
+                showToast("Items deleted");
+            };
+        }
+
+        async function downloadItems(items) {
+            if (items.length === 1) {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(items[0].blob);
+                a.download = items[0].filename;
+                a.click();
+            } else {
+                const zip = new JSZip();
+                items.forEach(item => zip.file(item.filename, item.blob));
+                const content = await zip.generateAsync({ type: "blob" });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(content);
+                a.download = `CameraPro_Export_${Date.now()}.zip`;
+                a.click();
+            }
+        }
+
+        // --- UI Utils ---
+        function showToast(msg) {
+            els.toast.textContent = msg;
+            els.toast.style.opacity = '1';
+            setTimeout(() => els.toast.style.opacity = '0', 2000);
+        }
+
+        function setRecordingLock(locked) {
+            [els.flip, els.modeSwitcher, els.settingsTrigger].forEach(el => {
+                el.classList.toggle('recording-locked', locked);
+            });
+        }
+
+        function closeSheets() {
+            els.settingsSheet.classList.remove('active');
+            els.gallerySheet.classList.remove('active');
+            els.overlay.classList.remove('active');
+            toggleSelectionMode(false);
+        }
+
+        async function updateThumb() {
+            if (state.galleryItems.length > 0) {
+                const last = state.galleryItems[0];
+                els.lastThumb.src = URL.createObjectURL(last.blob);
+                els.lastThumb.classList.remove('hidden');
+                els.galleryIcon.classList.add('hidden');
+            } else {
+                els.lastThumb.classList.add('hidden');
+                els.galleryIcon.classList.remove('hidden');
+            }
+        }
+
+        // --- Event Listeners ---
+        els.shutter.onclick = () => {
+            if (state.timerRunning) return;
+            if (state.settings.timer > 0 && !state.isRecording) {
+                state.timerRunning = true;
+                let count = state.settings.timer;
+                els.timerDisplay.classList.remove('hidden');
+                els.timerDisplay.textContent = count;
+                const itv = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(itv);
+                        els.timerDisplay.classList.add('hidden');
+                        state.timerRunning = false;
+                        state.mode === 'photo' ? takePhoto() : toggleRecording();
+                    } else els.timerDisplay.textContent = count;
+                }, 1000);
+            } else {
+                state.mode === 'photo' ? takePhoto() : toggleRecording();
+            }
+        };
+
+        els.galleryTrigger.onclick = async () => {
+            await loadGalleryItems();
+            renderGallery();
+            els.gallerySheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
+
+        els.settingsTrigger.onclick = () => {
+            if (state.isRecording) return;
+            els.settingsSheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
+
+        els.overlay.onclick = closeSheets;
+
+        els.modePhoto.onclick = () => {
+            state.mode = 'photo';
+            els.modePhoto.classList.add('active-chip');
+            els.modeVideo.classList.remove('active-chip');
+            document.body.classList.remove('mode-video');
+        };
+
+        els.modeVideo.onclick = () => {
+            state.mode = 'video';
+            els.modeVideo.classList.add('active-chip');
+            els.modePhoto.classList.remove('active-chip');
+            document.body.classList.add('mode-video');
+        };
+
+        els.flip.onclick = () => {
+            state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+            startCamera();
+        };
+
+        document.querySelectorAll('.filter-chip').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.currentFilter = btn.dataset.filter;
+                renderGallery();
+            };
+        });
+
+        // Selection Handlers
+        els.btnSelectMode.onclick = () => toggleSelectionMode(true);
+        els.btnCancelSelection.onclick = () => toggleSelectionMode(false);
+        els.btnDeleteSelected.onclick = () => {
+            if (state.selectedIds.size === 0) return;
+            deleteItems([...state.selectedIds]);
+            toggleSelectionMode(false);
+        };
+        els.btnDownloadSelected.onclick = () => {
+            const items = state.galleryItems.filter(i => state.selectedIds.has(i.id));
+            if (items.length > 0) downloadItems(items);
+        };
+        els.bulkDownload.onclick = () => downloadItems(state.galleryItems);
+
+        // Lightbox Handlers
+        els.lightboxClose.onclick = closeLightbox;
+        els.lightboxDelete.onclick = () => {
+            if (state.currentViewingItem) {
+                deleteItems([state.currentViewingItem.id]);
+                closeLightbox();
+            }
+        };
+        els.lightboxDownload.onclick = () => {
+            if (state.currentViewingItem) downloadItems([state.currentViewingItem]);
+        };
+        els.lightboxShare.onclick = async () => {
+            if (!state.currentViewingItem || !navigator.share) {
+                showToast("Sharing not supported");
+                return;
+            }
+            const file = new File([state.currentViewingItem.blob], state.currentViewingItem.filename, { type: state.currentViewingItem.blob.type });
+            try {
+                await navigator.share({ files: [file], title: 'Shared from Camera Pro' });
+            } catch (e) { console.error(e); }
+        };
+
+        // Standard settings
+        document.querySelectorAll('.res-toggle').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.res-toggle').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.settings.res = btn.dataset.res;
+                startCamera();
+            };
+        });
+
+        els.gridToggle.onclick = () => {
+            state.settings.grid = !state.settings.grid;
+            els.grid.style.opacity = state.settings.grid ? '1' : '0';
+            els.gridToggle.classList.toggle('bg-blue-600', state.settings.grid);
+            els.gridToggle.querySelector('.dot').style.transform = state.settings.grid ? 'translateX(24px)' : 'translateX(0)';
+        };
+
+        document.querySelectorAll('.timer-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.settings.timer = parseInt(btn.dataset.timer);
+            };
+        });
+
+        els.flash.onclick = async () => {
+            const track = state.stream?.getVideoTracks()[0];
+            const caps = track?.getCapabilities?.() || {};
+            if (caps.torch) {
+                state.flash = !state.flash;
+                await track.applyConstraints({ advanced: [{ torch: state.flash }] });
+                els.flash.querySelector('span').textContent = state.flash ? 'flash_on' : 'flash_off';
+                els.flash.classList.toggle('text-yellow-500', state.flash);
+            } else showToast("Flash not supported");
+        };
+
+        window.onload = async () => {
+            await initDB();
+            await startCamera();
+            await loadGalleryItems();
+            updateThumb();
+        };
+    </script>
+</body>
+</html>
