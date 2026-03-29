@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport-fit=cover is critical for iPhone notch support -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Material Camera Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,70 +14,47 @@
             --md-sys-color-on-surface: #1f1f1f;
             --md-sys-color-secondary-container: #d3e3fd;
             --md-sys-color-on-secondary-container: #041e49;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
         }
 
         body {
             background-color: #000;
             color: var(--md-sys-color-on-surface);
             margin: 0;
-            /* Use dvh for better iPhone Safari height handling */
-            height: 100dvh;
+            height: 100vh;
+            /* Prevent rubber-banding on iOS */
+            position: fixed;
+            width: 100%;
             overflow: hidden;
-            font-family: 'Google Sans', 'Roboto', sans-serif;
-            user-select: none;
+            font-family: 'Google Sans', 'Roboto', -apple-system, sans-serif;
             -webkit-tap-highlight-color: transparent;
-            /* Prevents overscroll bounce on iOS */
-            overscroll-behavior: none;
+            user-select: none;
         }
 
         .material-symbols-rounded {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
-        .fill-icon { font-variation-settings: 'FILL' 1; }
-
         #video-preview {
             width: 100%;
             height: 100%;
             object-fit: cover;
             background: #000;
-            transition: filter 0.1s ease;
+            transition: filter 0.2s ease;
         }
 
-        /* Responsive Header Card with Safe Area */
-        .header-container {
-            position: absolute;
-            top: calc(env(safe-area-inset-top) + 12px);
-            left: 16px;
-            right: 16px;
-            z-index: 40;
-        }
-
-        .maps-card {
-            background: rgba(255, 255, 255, 0.9);
+        .glass-ui {
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-radius: 32px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-
-        /* Control Cluster with Safe Area */
-        .bottom-ui-container {
-            position: absolute;
-            bottom: calc(env(safe-area-inset-bottom) + 20px);
-            left: 0;
-            right: 0;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 24px;
-            z-index: 40;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
         }
 
         .shutter-btn {
-            width: 82px;
-            height: 82px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             border: 4px solid white;
             padding: 5px;
@@ -102,44 +78,27 @@
         .mode-video .shutter-inner { background-color: #d93025; }
         
         .recording .shutter-inner {
-            border-radius: 14px;
+            border-radius: 12px;
             transform: scale(0.5);
+            background-color: #d93025;
         }
 
-        #camera-grid {
-            position: absolute;
-            inset: 0;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.2); }
-
-        .active-chip {
-            background-color: var(--md-sys-color-secondary-container) !important;
-            color: var(--md-sys-color-on-secondary-container) !important;
-        }
-
-        /* iOS-style Bottom Sheet */
         .bottom-sheet {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            background: white;
-            border-radius: 32px 32px 0 0;
+            background: #fff;
+            border-radius: 28px 28px 0 0;
             transform: translateY(100%);
-            transition: transform 0.45s cubic-bezier(0.1, 0.9, 0.2, 1);
+            transition: transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
             z-index: 100;
-            padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
-            max-height: 94vh;
+            padding-bottom: calc(1.5rem + var(--safe-bottom));
+            max-height: 90vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
         }
+
         .bottom-sheet.active { transform: translateY(0); }
 
         .sheet-overlay {
@@ -151,392 +110,302 @@
             transition: opacity 0.3s;
             z-index: 90;
         }
-        .sheet-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
+        .sheet-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        .active-chip {
+            background-color: var(--md-sys-color-secondary-container) !important;
+            color: var(--md-sys-color-on-secondary-container) !important;
         }
 
-        /* Gallery Grid optimized for iPhone screens */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 2px;
             overflow-y: auto;
-            flex-grow: 1;
-            padding-bottom: 20px;
-            -webkit-overflow-scrolling: touch;
         }
 
         .gallery-item {
             aspect-ratio: 1;
             position: relative;
             background: #121212;
-            cursor: pointer;
             overflow: hidden;
         }
 
-        .gallery-item img, .gallery-item video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* Lightbox for iPhone */
-        #lightbox {
+        .lightbox {
             position: fixed;
             inset: 0;
-            background: black;
+            background: #000;
             z-index: 200;
             display: none;
             flex-direction: column;
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        #lightbox.active { display: flex; }
-
-        .drag-handle {
-            width: 36px;
-            height: 5px;
-            background: #e0e0e0;
-            border-radius: 3px;
-            margin: 12px auto 20px auto;
         }
 
-        .filter-chip {
-            padding: 10px 22px;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 500;
-            background: #f1f3f4;
-            color: #444746;
-            transition: all 0.2s;
-            white-space: nowrap;
+        .lightbox.active { display: flex; }
+
+        /* Custom Header spacing for iOS notch */
+        .app-header {
+            padding-top: calc(1rem + var(--safe-top));
         }
 
-        #toast {
-            position: fixed;
-            bottom: calc(env(safe-area-inset-bottom) + 130px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: #323232;
-            color: #fff;
-            padding: 14px 28px;
-            border-radius: 30px;
-            font-size: 14px;
-            z-index: 300;
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            white-space: nowrap;
+        /* Custom Footer spacing for iOS home indicator */
+        .app-footer {
+            padding-bottom: calc(2.5rem + var(--safe-bottom));
         }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .recording-pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
-<body class="flex flex-col">
+<body class="flex flex-col h-screen">
 
-    <!-- Main Camera UI -->
     <main class="relative flex-grow overflow-hidden">
-        <video id="video-preview" autoplay playsinline muted></video>
-        
-        <div id="camera-grid">
-            <div></div><div></div><div></div>
-            <div></div><div></div><div></div>
-            <div></div><div></div><div></div>
+        <!-- iOS Mandatory: playsinline, muted, webkit-playsinline -->
+        <video id="video-preview" autoplay playsinline muted webkit-playsinline></video>
+
+        <!-- Dynamic Grid Overlay -->
+        <div id="camera-grid" class="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-0 transition-opacity">
+            <div class="border-[0.5px] border-white/20"></div><div class="border-[0.5px] border-white/20"></div><div class="border-[0.5px] border-white/20"></div>
+            <div class="border-[0.5px] border-white/20"></div><div class="border-[0.5px] border-white/20"></div><div class="border-[0.5px] border-white/20"></div>
+            <div class="border-[0.5px] border-white/20"></div><div class="border-[0.5px] border-white/20"></div><div class="border-[0.5px] border-white/20"></div>
         </div>
 
-        <div id="timer-display" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] text-white font-medium drop-shadow-2xl pointer-events-none z-50 hidden"></div>
+        <div id="timer-display" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[140px] text-white font-medium hidden z-50 drop-shadow-2xl"></div>
 
-        <!-- Header -->
-        <div class="header-container">
-            <div class="maps-card flex items-center h-14 px-3 gap-1">
-                <button id="flash-btn" class="w-11 h-11 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+        <!-- Top Controls (Safe Area Integrated) -->
+        <div class="app-header absolute top-0 left-0 w-full px-4 z-40">
+            <div class="glass-ui flex items-center h-14 px-3 gap-2">
+                <button id="flash-btn" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-800">
                     <span class="material-symbols-rounded">flash_off</span>
                 </button>
-                <div class="flex-grow text-sm font-medium text-gray-800 px-2 truncate text-center" id="recording-status">
-                    Camera Pro
+                <div class="flex-grow text-center">
+                    <span id="recording-indicator" class="hidden text-red-600 recording-pulse mr-1">●</span>
+                    <span id="status-text" class="text-sm font-medium text-gray-800 tracking-tight">Camera Pro</span>
                 </div>
-                <button id="settings-trigger" class="w-11 h-11 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+                <button id="settings-trigger" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-800">
                     <span class="material-symbols-rounded">settings</span>
                 </button>
             </div>
         </div>
 
-        <!-- Bottom UI Container -->
-        <div class="bottom-ui-container">
+        <!-- Capture Controls (Safe Area Integrated) -->
+        <div class="app-footer absolute bottom-0 left-0 w-full flex flex-col items-center gap-10 z-40">
             <!-- Mode Switcher -->
-            <div id="mode-switcher" class="maps-card flex p-1.5 gap-1">
-                <button id="btn-photo-mode" class="px-8 py-2.5 rounded-full text-sm font-medium active-chip transition-all">Photo</button>
-                <button id="btn-video-mode" class="px-8 py-2.5 rounded-full text-sm font-medium text-gray-600 transition-all">Video</button>
+            <div id="mode-switcher" class="glass-ui flex p-1 gap-1">
+                <button id="btn-photo" class="px-8 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-900 transition-all">Photo</button>
+                <button id="btn-video" class="px-8 py-2 rounded-full text-sm font-medium text-gray-600 transition-all">Video</button>
             </div>
 
-            <!-- Main Controls Cluster -->
-            <div class="flex items-center gap-12 mb-2">
-                <!-- Gallery Thumbnail -->
-                <button id="gallery-trigger" class="w-14 h-14 rounded-2xl bg-black/40 border border-white/20 overflow-hidden backdrop-blur-xl flex items-center justify-center shadow-2xl relative active:scale-90 transition-transform">
-                    <span id="gallery-icon" class="material-symbols-rounded text-white/80 text-2xl">photo_library</span>
-                    <img id="last-capture-img" class="hidden absolute inset-0 w-full h-full object-cover">
+            <!-- Main Buttons Row -->
+            <div class="flex items-center gap-10">
+                <button id="gallery-trigger" class="w-14 h-14 rounded-2xl bg-black/40 border border-white/10 overflow-hidden backdrop-blur-xl flex items-center justify-center">
+                    <span id="gallery-empty" class="material-symbols-rounded text-white/50 text-2xl">photo_library</span>
+                    <img id="last-thumb" class="hidden w-full h-full object-cover">
                 </button>
 
-                <!-- Shutter -->
-                <button id="shutter" class="shutter-btn shadow-2xl">
+                <button id="shutter" class="shutter-btn">
                     <div class="shutter-inner"></div>
                 </button>
 
-                <!-- Flip Camera -->
-                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/40 border border-white/20 backdrop-blur-xl flex items-center justify-center shadow-2xl transition-transform active:scale-90">
+                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/40 border border-white/10 backdrop-blur-xl flex items-center justify-center">
                     <span class="material-symbols-rounded text-white text-3xl">flip_camera_android</span>
                 </button>
             </div>
         </div>
     </main>
 
-    <!-- UI Components -->
-    <div id="sheet-overlay" class="sheet-overlay"></div>
-    <div id="toast"></div>
+    <!-- Sheets & Lightbox -->
+    <div id="overlay" class="sheet-overlay"></div>
 
-    <!-- Settings Bottom Sheet -->
+    <!-- Settings Sheet -->
     <div id="settings-sheet" class="bottom-sheet">
-        <div class="drag-handle" onclick="closeSheets()"></div>
-        <div class="px-6 pb-6 space-y-6 overflow-y-auto no-scrollbar">
-            <h3 class="text-2xl font-medium text-gray-900">Settings</h3>
+        <div class="w-10 h-1.5 bg-gray-200 rounded-full mx-auto my-4"></div>
+        <div class="px-6 space-y-8 pb-4">
+            <h2 class="text-2xl font-medium">Settings</h2>
             
-            <div class="space-y-4">
-                <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Capture Quality</p>
-                <div class="flex gap-3">
-                    <button data-res="HD" class="res-toggle flex-1 py-4 rounded-2xl border border-gray-100 text-sm font-medium active-chip shadow-sm transition-all">Full HD</button>
-                    <button data-res="4K" class="res-toggle flex-1 py-4 rounded-2xl border border-gray-100 text-sm font-medium bg-gray-50 transition-all">4K Ultra</button>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between py-3 border-y border-gray-100">
-                <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center">
-                        <span class="material-symbols-rounded text-blue-600">grid_4x4</span>
-                    </div>
-                    <div>
-                        <span class="block font-medium">Composition Grid</span>
-                        <span class="text-xs text-gray-500">Rule of thirds helper</span>
-                    </div>
-                </div>
-                <button id="grid-toggle" class="w-12 h-7 bg-gray-200 rounded-full relative transition-colors duration-300">
-                    <div class="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm"></div>
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Self Timer</p>
+            <section class="space-y-4">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Resolution</label>
                 <div class="flex gap-2">
-                    <button data-timer="0" class="timer-btn flex-1 py-3.5 rounded-2xl border border-gray-100 text-sm font-medium active-chip">Off</button>
-                    <button data-timer="3" class="timer-btn flex-1 py-3.5 rounded-2xl border border-gray-100 text-sm font-medium bg-gray-50">3s</button>
-                    <button data-timer="10" class="timer-btn flex-1 py-3.5 rounded-2xl border border-gray-100 text-sm font-medium bg-gray-50">10s</button>
+                    <button data-res="HD" class="res-btn flex-1 py-4 rounded-2xl border border-gray-100 bg-blue-50 text-blue-700 text-sm font-medium">Full HD</button>
+                    <button data-res="4K" class="res-btn flex-1 py-4 rounded-2xl border border-gray-100 bg-white text-gray-600 text-sm font-medium">4K Ultra</button>
                 </div>
-            </div>
+            </section>
+
+            <section class="space-y-4">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Timer</label>
+                <div class="flex gap-2">
+                    <button data-timer="0" class="timer-btn flex-1 py-3 rounded-2xl bg-blue-50 text-blue-700 text-sm">Off</button>
+                    <button data-timer="3" class="timer-btn flex-1 py-3 rounded-2xl bg-white text-gray-600 text-sm">3s</button>
+                    <button data-timer="10" class="timer-btn flex-1 py-3 rounded-2xl bg-white text-gray-600 text-sm">10s</button>
+                </div>
+            </section>
+
+            <section class="flex items-center justify-between py-2">
+                <div>
+                    <p class="font-medium">Assistive Grid</p>
+                    <p class="text-sm text-gray-500">Show 3x3 framing lines</p>
+                </div>
+                <input type="checkbox" id="grid-toggle" class="w-6 h-6 rounded-md">
+            </section>
         </div>
     </div>
 
-    <!-- Gallery Bottom Sheet -->
+    <!-- Gallery Sheet -->
     <div id="gallery-sheet" class="bottom-sheet">
-        <div class="drag-handle" onclick="closeSheets()"></div>
+        <div class="w-10 h-1.5 bg-gray-200 rounded-full mx-auto my-4"></div>
+        <div class="flex items-center justify-between px-6 mb-4">
+            <h2 class="text-2xl font-medium">Gallery</h2>
+            <button id="select-mode-btn" class="text-sm font-medium text-blue-600">Select</button>
+        </div>
         
-        <div class="px-5 pb-4">
-            <div class="flex justify-between items-center mb-5">
-                <h3 id="gallery-title" class="text-2xl font-medium text-gray-900">Gallery</h3>
-                
-                <!-- Default Actions -->
-                <div class="flex gap-1" id="gallery-actions-default">
-                    <button id="btn-select-mode" class="p-2.5 text-gray-700 rounded-full hover:bg-gray-100">
-                        <span class="material-symbols-rounded">checklist</span>
-                    </button>
-                    <button id="bulk-download" class="p-2.5 text-blue-600 rounded-full hover:bg-blue-50">
-                        <span class="material-symbols-rounded">download_for_offline</span>
-                    </button>
-                </div>
-
-                <!-- Selection Actions -->
-                <div class="flex items-center gap-2 hidden" id="gallery-actions-selection">
-                    <button id="btn-select-all" class="text-sm font-medium text-blue-600 px-4 py-2 rounded-full hover:bg-blue-50">Select All</button>
-                    <div class="h-6 w-px bg-gray-200 mx-1"></div>
-                    <button id="btn-download-selected" class="p-2.5 text-blue-600 rounded-full hover:bg-blue-50">
-                        <span class="material-symbols-rounded">download</span>
-                    </button>
-                    <button id="btn-delete-selected" class="p-2.5 text-red-500 rounded-full hover:bg-red-50">
-                        <span class="material-symbols-rounded">delete</span>
-                    </button>
-                    <button id="btn-cancel-selection" class="p-2.5 text-gray-500 rounded-full hover:bg-gray-100">
-                        <span class="material-symbols-rounded">close</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Selection Banner -->
-            <div id="selection-banner" class="hidden mb-4 py-3 px-5 bg-blue-50 text-blue-700 rounded-2xl text-sm font-medium flex justify-between items-center animate-in fade-in slide-in-from-top-2 duration-300">
-                <span id="selection-count">0 selected</span>
-            </div>
-
-            <!-- Filter Chips -->
-            <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                <button class="filter-chip active-chip" data-filter="all">All Media</button>
-                <button class="filter-chip" data-filter="image">Photos</button>
-                <button class="filter-chip" data-filter="video">Videos</button>
-            </div>
+        <div class="flex px-6 gap-2 mb-4 overflow-x-auto no-scrollbar">
+            <button data-filter="all" class="filter-chip active-chip px-4 py-2 rounded-full bg-gray-100 text-sm whitespace-nowrap">All Media</button>
+            <button data-filter="photo" class="filter-chip px-4 py-2 rounded-full bg-gray-100 text-sm whitespace-nowrap">Photos</button>
+            <button data-filter="video" class="filter-chip px-4 py-2 rounded-full bg-gray-100 text-sm whitespace-nowrap">Videos</button>
         </div>
 
-        <!-- Media Grid -->
-        <div id="gallery-content" class="gallery-grid"></div>
-        
-        <div id="empty-gallery" class="py-24 text-center text-gray-400 hidden">
-            <span class="material-symbols-rounded text-6xl block mb-4 opacity-20">photo_library</span>
-            <p class="font-medium text-gray-500">Nothing captured yet</p>
-            <p class="text-sm opacity-60">Photos and videos will appear here</p>
+        <div id="gallery-content" class="gallery-grid no-scrollbar flex-grow px-0.5"></div>
+
+        <div id="batch-actions" class="hidden px-6 py-4 flex gap-4 bg-white border-t border-gray-100">
+            <button id="download-zip" class="flex-1 py-3 rounded-2xl bg-blue-600 text-white font-medium">Save All</button>
+            <button id="delete-batch" class="flex-1 py-3 rounded-2xl bg-red-50 text-red-600 font-medium">Delete</button>
         </div>
     </div>
 
-    <!-- Lightbox Viewer -->
-    <div id="lightbox">
-        <!-- Lightbox Toolbar -->
-        <div class="flex justify-between items-center p-5 text-white z-50 bg-gradient-to-b from-black/60 to-transparent">
-            <button id="lightbox-close" class="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 active:scale-90 transition-all">
+    <!-- Fullscreen Lightbox -->
+    <div id="lightbox" class="lightbox">
+        <div class="absolute top-0 left-0 w-full flex justify-between items-center px-4 app-header z-50">
+            <button onclick="closeLightbox()" class="w-10 h-10 flex items-center justify-center rounded-full bg-black/20 text-white backdrop-blur-md">
                 <span class="material-symbols-rounded">close</span>
             </button>
-            <div id="lightbox-meta" class="text-center">
-                <p class="text-sm font-medium" id="lightbox-date">Jan 01, 2024</p>
-                <p class="text-[10px] opacity-60 uppercase tracking-widest mt-0.5" id="lightbox-time">12:00 PM</p>
-            </div>
-            <div class="flex gap-2">
-                <button id="lightbox-share" class="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 active:scale-90 transition-all">
+            <div class="flex gap-4">
+                <button id="lb-share" class="w-10 h-10 flex items-center justify-center rounded-full bg-black/20 text-white backdrop-blur-md">
                     <span class="material-symbols-rounded">share</span>
                 </button>
-                <button id="lightbox-delete" class="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 text-red-400 active:scale-90 transition-all">
+                <button id="lb-delete" class="w-10 h-10 flex items-center justify-center rounded-full bg-black/20 text-white backdrop-blur-md">
                     <span class="material-symbols-rounded">delete</span>
                 </button>
             </div>
         </div>
-
-        <!-- Lightbox Main -->
-        <div class="flex-grow flex items-center justify-center relative">
-            <div id="lightbox-main" class="w-full h-full flex items-center justify-center"></div>
-            
-            <button id="lightbox-prev" class="absolute left-4 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all">
-                <span class="material-symbols-rounded text-4xl">chevron_left</span>
-            </button>
-            <button id="lightbox-next" class="absolute right-4 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all">
-                <span class="material-symbols-rounded text-4xl">chevron_right</span>
-            </button>
-        </div>
-
-        <!-- Lightbox Footer -->
-        <div id="lightbox-footer" class="p-8 pb-10 flex justify-center bg-gradient-to-t from-black/60 to-transparent z-50">
-            <button id="lightbox-download" class="px-12 py-4 bg-white text-black rounded-full font-medium flex items-center gap-3 shadow-2xl active:scale-95 transition-all">
-                <span class="material-symbols-rounded fill-icon">download</span>
-                Save to Device
-            </button>
-        </div>
+        <div id="lb-content" class="flex-grow flex items-center justify-center overflow-hidden"></div>
     </div>
 
-    <canvas id="capture-canvas" class="hidden"></canvas>
+    <div id="toast" class="fixed bottom-[140px] left-1/2 -translate-x-1/2 bg-gray-900/90 text-white px-6 py-3 rounded-full text-sm opacity-0 transition-opacity z-[300] pointer-events-none"></div>
+
+    <canvas id="cap-canvas" class="hidden"></canvas>
 
     <script>
-        const DB_NAME = "CameraProDB";
-        const STORE_NAME = "media";
-        let db;
-
+        // State Management
         const state = {
+            db: null,
             stream: null,
-            mode: 'photo',
+            mode: 'photo', // 'photo' | 'video'
             isRecording: false,
-            facingMode: 'environment', 
+            facingMode: 'environment',
             flash: false,
+            settings: { res: 'HD', timer: 0, grid: false },
+            media: [],
+            currentFilter: 'all',
+            selection: new Set(),
+            isSelectMode: false,
             mediaRecorder: null,
             chunks: [],
-            settings: { res: 'HD', grid: false, timer: 0 },
-            timerRunning: false,
-            galleryItems: [],
-            selectionMode: false,
-            selectedIds: new Set(),
-            currentFilter: 'all',
-            lightboxIndex: -1,
-            get currentViewingItems() {
-                return this.galleryItems.filter(i => this.currentFilter === 'all' || i.type === this.currentFilter);
-            }
+            activeItemIndex: 0
         };
 
         const els = {
             video: document.getElementById('video-preview'),
             shutter: document.getElementById('shutter'),
-            modePhoto: document.getElementById('btn-photo-mode'),
-            modeVideo: document.getElementById('btn-video-mode'),
-            modeSwitcher: document.getElementById('mode-switcher'),
-            flash: document.getElementById('flash-btn'),
-            flip: document.getElementById('flip-btn'),
-            canvas: document.getElementById('capture-canvas'),
-            settingsTrigger: document.getElementById('settings-trigger'),
-            settingsSheet: document.getElementById('settings-sheet'),
+            statusText: document.getElementById('status-text'),
+            recIndicator: document.getElementById('recording-indicator'),
             galleryTrigger: document.getElementById('gallery-trigger'),
+            lastThumb: document.getElementById('last-thumb'),
             gallerySheet: document.getElementById('gallery-sheet'),
-            overlay: document.getElementById('sheet-overlay'),
-            grid: document.getElementById('camera-grid'),
-            gridToggle: document.getElementById('grid-toggle'),
-            timerDisplay: document.getElementById('timer-display'),
-            lastThumb: document.getElementById('last-capture-img'),
-            galleryIcon: document.getElementById('gallery-icon'),
-            status: document.getElementById('recording-status'),
+            settingsSheet: document.getElementById('settings-sheet'),
+            settingsTrigger: document.getElementById('settings-trigger'),
+            overlay: document.getElementById('overlay'),
             galleryContent: document.getElementById('gallery-content'),
-            emptyGallery: document.getElementById('empty-gallery'),
-            bulkDownload: document.getElementById('bulk-download'),
-            toast: document.getElementById('toast'),
-            btnSelectMode: document.getElementById('btn-select-mode'),
-            btnCancelSelection: document.getElementById('btn-cancel-selection'),
-            btnSelectAll: document.getElementById('btn-select-all'),
-            actionsDefault: document.getElementById('gallery-actions-default'),
-            actionsSelection: document.getElementById('gallery-actions-selection'),
-            selectionBanner: document.getElementById('selection-banner'),
-            selectionCount: document.getElementById('selection-count'),
-            btnDeleteSelected: document.getElementById('btn-delete-selected'),
-            btnDownloadSelected: document.getElementById('btn-download-selected'),
+            timerDisplay: document.getElementById('timer-display'),
             lightbox: document.getElementById('lightbox'),
-            lightboxMain: document.getElementById('lightbox-main'),
-            lightboxClose: document.getElementById('lightbox-close'),
-            lightboxDate: document.getElementById('lightbox-date'),
-            lightboxTime: document.getElementById('lightbox-time'),
-            lightboxDelete: document.getElementById('lightbox-delete'),
-            lightboxDownload: document.getElementById('lightbox-download'),
-            lightboxShare: document.getElementById('lightbox-share'),
-            lightboxPrev: document.getElementById('lightbox-prev'),
-            lightboxNext: document.getElementById('lightbox-next'),
-            lightboxFooter: document.getElementById('lightbox-footer')
+            lbContent: document.getElementById('lb-content'),
+            toast: document.getElementById('toast'),
+            canvas: document.getElementById('cap-canvas'),
+            grid: document.getElementById('camera-grid')
         };
 
-        // --- Database ---
-        const initDB = () => {
+        // IndexedDB
+        async function initDB() {
             return new Promise((resolve) => {
-                const request = indexedDB.open(DB_NAME, 1);
+                const request = indexedDB.open('CameraProDB', 1);
                 request.onupgradeneeded = (e) => {
                     const db = e.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+                    if (!db.objectStoreNames.contains('media')) {
+                        db.createObjectStore('media', { keyPath: 'id', autoIncrement: true });
                     }
                 };
                 request.onsuccess = (e) => {
-                    db = e.target.result;
+                    state.db = e.target.result;
+                    resolve();
+                };
+                request.onerror = () => {
+                    showToast("Database error");
                     resolve();
                 };
             });
-        };
+        }
 
-        // --- Camera Core ---
-        async function startCamera() {
-            if (state.stream) {
-                state.stream.getTracks().forEach(t => t.stop());
+        async function saveMedia(blob, type) {
+            if (!state.db) {
+                showToast("Saving failed: DB not ready");
+                return;
             }
+            return new Promise((resolve) => {
+                const transaction = state.db.transaction(['media'], 'readwrite');
+                const store = transaction.objectStore('media');
+                const item = {
+                    blob,
+                    type,
+                    timestamp: Date.now(),
+                    name: `${type}_${Date.now()}.${type === 'photo' ? 'jpg' : 'mp4'}`
+                };
+                const request = store.add(item);
+                request.onsuccess = () => {
+                    loadMedia();
+                    resolve();
+                };
+                request.onerror = () => resolve();
+            });
+        }
+
+        async function loadMedia() {
+            if (!state.db) return;
+            const transaction = state.db.transaction(['media'], 'readonly');
+            const store = transaction.objectStore('media');
+            const request = store.getAll();
+            request.onsuccess = () => {
+                state.media = request.result.sort((a,b) => b.timestamp - a.timestamp);
+                renderGallery();
+                updateThumb();
+            };
+        }
+
+        // Camera Engine
+        async function startCamera() {
+            if (state.stream) state.stream.getTracks().forEach(t => t.stop());
 
             const constraints = {
                 video: {
                     facingMode: state.facingMode,
-                    width: state.settings.res === '4K' ? { ideal: 3840 } : { ideal: 1920 },
-                    height: state.settings.res === '4K' ? { ideal: 2160 } : { ideal: 1080 }
+                    width: { ideal: state.settings.res === '4K' ? 3840 : 1920 },
+                    height: { ideal: state.settings.res === '4K' ? 2160 : 1080 }
                 },
                 audio: true
             };
@@ -544,298 +413,189 @@
             try {
                 state.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 els.video.srcObject = state.stream;
-                const track = state.stream.getVideoTracks()[0];
-                const actualFacing = track.getSettings().facingMode;
-                els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+                await els.video.play();
             } catch (err) {
-                showToast("Camera access is required");
+                showToast("Camera access denied");
             }
         }
 
+        function haptic() {
+            if (window.navigator.vibrate) window.navigator.vibrate(15);
+        }
+
+        function showToast(msg) {
+            els.toast.textContent = msg;
+            els.toast.style.opacity = '1';
+            setTimeout(() => els.toast.style.opacity = '0', 2500);
+        }
+
+        // Photo Capture
         function takePhoto() {
-            if (!els.video.videoWidth) return;
+            haptic();
             els.canvas.width = els.video.videoWidth;
             els.canvas.height = els.video.videoHeight;
             const ctx = els.canvas.getContext('2d');
-            
-            if (state.facingMode === 'user') {
-                ctx.translate(els.canvas.width, 0);
-                ctx.scale(-1, 1);
-            }
             ctx.drawImage(els.video, 0, 0);
             
-            els.canvas.toBlob(blob => saveToGallery(blob, 'image'), 'image/jpeg', 0.95);
-            els.video.style.filter = 'brightness(1.5)';
-            setTimeout(() => els.video.style.filter = '', 100);
+            els.canvas.toBlob((blob) => {
+                saveMedia(blob, 'photo');
+                showToast("Saved Photo");
+                
+                // Flash animation
+                els.video.style.filter = 'brightness(2) contrast(1.2)';
+                setTimeout(() => els.video.style.filter = '', 100);
+            }, 'image/jpeg', 0.95);
         }
 
-        let recordInterval, startTime;
+        // Video Recording
         function toggleRecording() {
             if (!state.isRecording) {
+                haptic();
                 state.chunks = [];
-                // iPhone typically prefers H.264
-                let mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
-                
+                // iOS Priority: video/mp4
+                let mimeType = 'video/mp4';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm;codecs=vp9,opus';
+                }
+
                 state.mediaRecorder = new MediaRecorder(state.stream, { mimeType });
-                state.mediaRecorder.ondataavailable = e => state.chunks.push(e.data);
+                state.mediaRecorder.ondataavailable = (e) => state.chunks.push(e.data);
                 state.mediaRecorder.onstop = () => {
-                    const blob = new Blob(state.chunks, { type: state.mediaRecorder.mimeType });
-                    saveToGallery(blob, 'video');
-                    clearInterval(recordInterval);
-                    els.status.textContent = "Camera Pro";
-                    els.status.classList.remove('text-red-600');
-                    setRecordingLock(false);
+                    const blob = new Blob(state.chunks, { type: mimeType });
+                    saveMedia(blob, 'video');
+                    showToast("Video Saved");
                 };
 
                 state.mediaRecorder.start();
                 state.isRecording = true;
-                setRecordingLock(true);
-                els.shutter.classList.add('recording');
-                els.status.classList.add('text-red-600');
-                
-                startTime = Date.now();
-                recordInterval = setInterval(() => {
-                    const diff = Math.floor((Date.now() - startTime) / 1000);
-                    const m = Math.floor(diff/60).toString().padStart(2, '0');
-                    const s = (diff%60).toString().padStart(2, '0');
-                    els.status.textContent = `REC • ${m}:${s}`;
-                }, 1000);
+                document.body.classList.add('recording');
+                els.recIndicator.classList.remove('hidden');
+                els.statusText.textContent = "00:00";
+                startRecordTimer();
             } else {
+                haptic();
                 state.mediaRecorder.stop();
                 state.isRecording = false;
-                els.shutter.classList.remove('recording');
+                document.body.classList.remove('recording');
+                els.recIndicator.classList.add('hidden');
+                els.statusText.textContent = "Camera Pro";
+                clearInterval(state.recordInterval);
             }
         }
 
-        // --- Gallery & Storage ---
-        async function saveToGallery(blob, type) {
-            const transaction = db.transaction([STORE_NAME], "readwrite");
-            const store = transaction.objectStore(STORE_NAME);
-            const item = {
-                blob: blob,
-                type: type,
-                timestamp: Date.now(),
-                filename: `${type === 'image' ? 'IMG' : 'VID'}_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`
-            };
-            store.add(item);
-            
-            await loadGalleryItems();
-            updateThumb();
-            showToast(type === 'image' ? "Photo saved" : "Video saved");
+        function startRecordTimer() {
+            let sec = 0;
+            state.recordInterval = setInterval(() => {
+                sec++;
+                const m = Math.floor(sec / 60).toString().padStart(2, '0');
+                const s = (sec % 60).toString().padStart(2, '0');
+                els.statusText.textContent = `${m}:${s}`;
+            }, 1000);
         }
 
-        async function loadGalleryItems() {
-            return new Promise(resolve => {
-                const transaction = db.transaction([STORE_NAME], "readonly");
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-                request.onsuccess = () => {
-                    state.galleryItems = request.result.sort((a,b) => b.timestamp - a.timestamp);
-                    resolve(state.galleryItems);
-                };
-            });
+        // UI Helpers
+        function updateThumb() {
+            if (state.media.length > 0) {
+                const url = URL.createObjectURL(state.media[0].blob);
+                els.lastThumb.src = url;
+                els.lastThumb.classList.remove('hidden');
+                document.getElementById('gallery-empty').classList.add('hidden');
+            } else {
+                els.lastThumb.classList.add('hidden');
+                document.getElementById('gallery-empty').classList.remove('hidden');
+            }
         }
 
         function renderGallery() {
             els.galleryContent.innerHTML = '';
-            const filtered = state.galleryItems.filter(i => state.currentFilter === 'all' || i.type === state.currentFilter);
+            const filtered = state.media.filter(m => state.currentFilter === 'all' || m.type === state.currentFilter);
             
-            if (filtered.length === 0) {
-                els.emptyGallery.classList.remove('hidden');
+            filtered.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.onclick = () => state.isSelectMode ? toggleSelect(item.id, div) : openLightbox(item);
+
+                const url = URL.createObjectURL(item.blob);
+                if (item.type === 'photo') {
+                    div.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+                } else {
+                    div.innerHTML = `
+                        <video src="${url}" class="w-full h-full object-cover"></video>
+                        <span class="material-symbols-rounded absolute bottom-2 right-2 text-white text-lg drop-shadow-md">play_circle</span>
+                    `;
+                }
+
+                if (state.selection.has(item.id)) div.classList.add('brightness-50', 'ring-4', 'ring-blue-500', 'ring-inset');
+                els.galleryContent.appendChild(div);
+            });
+        }
+
+        function toggleSelect(id, el) {
+            if (state.selection.has(id)) {
+                state.selection.delete(id);
+                el.classList.remove('brightness-50', 'ring-4', 'ring-blue-500', 'ring-inset');
             } else {
-                els.emptyGallery.classList.add('hidden');
-                filtered.forEach((item, index) => {
-                    const div = document.createElement('div');
-                    div.className = `gallery-item ${state.selectedIds.has(item.id) ? 'selected ring-4 ring-blue-500 ring-inset' : ''}`;
-                    const url = URL.createObjectURL(item.blob);
-                    
-                    if (item.type === 'image') {
-                        div.innerHTML = `<img src="${url}" loading="lazy">`;
-                    } else {
-                        div.innerHTML = `
-                            <video src="${url}#t=0.5" muted playsinline></video>
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/10">
-                                <span class="material-symbols-rounded text-white text-3xl opacity-80 fill-icon">play_circle</span>
-                            </div>
-                        `;
-                    }
-
-                    div.onclick = () => {
-                        if (state.selectionMode) {
-                            if (state.selectedIds.has(item.id)) state.selectedIds.delete(item.id);
-                            else state.selectedIds.add(item.id);
-                            updateSelectionUI();
-                            renderGallery();
-                        } else {
-                            openLightbox(index);
-                        }
-                    };
-                    els.galleryContent.appendChild(div);
-                });
+                state.selection.add(id);
+                el.classList.add('brightness-50', 'ring-4', 'ring-blue-500', 'ring-inset');
             }
+            document.getElementById('batch-actions').classList.toggle('hidden', state.selection.size === 0);
         }
 
-        // --- Lightbox ---
-        function openLightbox(index) {
-            state.lightboxIndex = index;
-            els.lightbox.classList.add('active');
-            updateLightboxContent();
-        }
-
-        function updateLightboxContent() {
-            const items = state.currentViewingItems;
-            const item = items[state.lightboxIndex];
-            if (!item) return;
-
-            els.lightboxMain.innerHTML = '';
+        function openLightbox(item) {
+            els.lbContent.innerHTML = '';
             const url = URL.createObjectURL(item.blob);
-            
-            if (item.type === 'image') {
-                const img = document.createElement('img');
-                img.src = url;
-                img.className = 'max-w-full max-h-full object-contain';
-                els.lightboxMain.appendChild(img);
+            if (item.type === 'photo') {
+                els.lbContent.innerHTML = `<img src="${url}" class="max-w-full max-h-full object-contain">`;
             } else {
-                const video = document.createElement('video');
-                video.src = url;
-                video.controls = true;
-                video.playsinline = true;
-                video.autoplay = true;
-                video.className = 'max-w-full max-h-full';
-                els.lightboxMain.appendChild(video);
+                els.lbContent.innerHTML = `<video src="${url}" controls autoplay class="max-w-full max-h-full"></video>`;
             }
-
-            const d = new Date(item.timestamp);
-            els.lightboxDate.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-            els.lightboxTime.textContent = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-
-            els.lightboxPrev.classList.toggle('invisible', state.lightboxIndex === 0);
-            els.lightboxNext.classList.toggle('invisible', state.lightboxIndex === items.length - 1);
+            els.lightbox.classList.add('active');
+            state.activeLightboxId = item.id;
         }
 
         function closeLightbox() {
             els.lightbox.classList.remove('active');
-            els.lightboxMain.innerHTML = '';
-            state.lightboxIndex = -1;
+            els.lbContent.innerHTML = '';
         }
 
-        function navigateLightbox(dir) {
-            const items = state.currentViewingItems;
-            const newIdx = state.lightboxIndex + dir;
-            if (newIdx >= 0 && newIdx < items.length) {
-                state.lightboxIndex = newIdx;
-                updateLightboxContent();
-            }
-        }
-
-        // --- UI Interactions ---
-        function showToast(msg) {
-            els.toast.textContent = msg;
-            els.toast.style.opacity = '1';
-            els.toast.style.transform = 'translateX(-50%) translateY(-10px)';
-            setTimeout(() => {
-                els.toast.style.opacity = '0';
-                els.toast.style.transform = 'translateX(-50%) translateY(0)';
-            }, 2000);
-        }
-
-        function setRecordingLock(locked) {
-            [els.flip, els.modeSwitcher, els.settingsTrigger, els.galleryTrigger].forEach(el => {
-                el.style.pointerEvents = locked ? 'none' : 'auto';
-                el.style.opacity = locked ? '0.3' : '1';
-            });
-        }
-
-        function closeSheets() {
-            els.settingsSheet.classList.remove('active');
-            els.gallerySheet.classList.remove('active');
-            els.overlay.classList.remove('active');
-            toggleSelectionMode(false);
-        }
-
-        async function updateThumb() {
-            if (state.galleryItems.length > 0) {
-                const last = state.galleryItems[0];
-                els.lastThumb.src = URL.createObjectURL(last.blob);
-                els.lastThumb.classList.remove('hidden');
-                els.galleryIcon.classList.add('hidden');
-            } else {
-                els.lastThumb.classList.add('hidden');
-                els.galleryIcon.classList.remove('hidden');
-            }
-        }
-
-        function toggleSelectionMode(active) {
-            state.selectionMode = active;
-            state.selectedIds.clear();
-            els.actionsDefault.classList.toggle('hidden', active);
-            els.actionsSelection.classList.toggle('hidden', !active);
-            els.selectionBanner.classList.toggle('hidden', !active);
-            updateSelectionUI();
-            renderGallery();
-        }
-
-        function updateSelectionUI() {
-            els.selectionCount.textContent = `${state.selectedIds.size} selected`;
-        }
-
-        async function downloadItems(items) {
-            if (items.length === 1) {
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(items[0].blob);
-                a.download = items[0].filename;
-                a.click();
-            } else {
-                showToast("Zipping media...");
-                const zip = new JSZip();
-                items.forEach(item => zip.file(item.filename, item.blob));
-                const content = await zip.generateAsync({ type: "blob" });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(content);
-                a.download = `Media_Pack_${Date.now()}.zip`;
-                a.click();
-            }
-        }
-
-        async function deleteItems(ids) {
-            const tx = db.transaction([STORE_NAME], "readwrite");
-            const store = tx.objectStore(STORE_NAME);
-            ids.forEach(id => store.delete(id));
-            tx.oncomplete = async () => {
-                await loadGalleryItems();
-                renderGallery();
-                updateThumb();
-                showToast("Deleted successfully");
-            };
-        }
-
-        // --- Event Listeners ---
+        // Event Listeners
         els.shutter.onclick = () => {
-            if (state.timerRunning) return;
             if (state.settings.timer > 0 && !state.isRecording) {
-                state.timerRunning = true;
                 let count = state.settings.timer;
-                els.timerDisplay.classList.remove('hidden');
                 els.timerDisplay.textContent = count;
+                els.timerDisplay.classList.remove('hidden');
                 const itv = setInterval(() => {
                     count--;
                     if (count <= 0) {
                         clearInterval(itv);
                         els.timerDisplay.classList.add('hidden');
-                        state.timerRunning = false;
                         state.mode === 'photo' ? takePhoto() : toggleRecording();
-                    } else els.timerDisplay.textContent = count;
+                    } else {
+                        els.timerDisplay.textContent = count;
+                    }
                 }, 1000);
             } else {
                 state.mode === 'photo' ? takePhoto() : toggleRecording();
             }
         };
 
-        els.galleryTrigger.onclick = async () => {
-            await loadGalleryItems();
-            renderGallery();
-            els.gallerySheet.classList.add('active');
-            els.overlay.classList.add('active');
+        document.getElementById('btn-photo').onclick = () => {
+            state.mode = 'photo';
+            document.body.classList.remove('mode-video');
+            document.getElementById('btn-photo').className = 'px-8 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-900 transition-all';
+            document.getElementById('btn-video').className = 'px-8 py-2 rounded-full text-sm font-medium text-gray-600 transition-all';
+        };
+
+        document.getElementById('btn-video').onclick = () => {
+            state.mode = 'video';
+            document.body.classList.add('mode-video');
+            document.getElementById('btn-video').className = 'px-8 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-900 transition-all';
+            document.getElementById('btn-photo').className = 'px-8 py-2 rounded-full text-sm font-medium text-gray-600 transition-all';
+        };
+
+        document.getElementById('flip-btn').onclick = () => {
+            state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+            startCamera();
         };
 
         els.settingsTrigger.onclick = () => {
@@ -843,125 +603,100 @@
             els.overlay.classList.add('active');
         };
 
-        els.overlay.onclick = closeSheets;
-
-        els.modePhoto.onclick = () => {
-            state.mode = 'photo';
-            els.modePhoto.classList.add('active-chip');
-            els.modeVideo.classList.remove('active-chip');
-            document.body.classList.remove('mode-video');
+        els.galleryTrigger.onclick = () => {
+            els.gallerySheet.classList.add('active');
+            els.overlay.classList.add('active');
+            loadMedia();
         };
 
-        els.modeVideo.onclick = () => {
-            state.mode = 'video';
-            els.modeVideo.classList.add('active-chip');
-            els.modePhoto.classList.remove('active-chip');
-            document.body.classList.add('mode-video');
+        els.overlay.onclick = () => {
+            els.settingsSheet.classList.remove('active');
+            els.gallerySheet.classList.remove('active');
+            els.overlay.classList.remove('active');
         };
 
-        els.flip.onclick = () => {
-            state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
-            startCamera();
-        };
-
-        els.btnSelectMode.onclick = () => toggleSelectionMode(true);
-        els.btnCancelSelection.onclick = () => toggleSelectionMode(false);
-        els.btnSelectAll.onclick = () => {
-            const filtered = state.currentViewingItems;
-            if (state.selectedIds.size === filtered.length) state.selectedIds.clear();
-            else filtered.forEach(item => state.selectedIds.add(item.id));
-            updateSelectionUI();
-            renderGallery();
-        };
-
-        els.btnDeleteSelected.onclick = () => {
-            if (state.selectedIds.size > 0) {
-                deleteItems([...state.selectedIds]);
-                toggleSelectionMode(false);
-            }
-        };
-
-        els.btnDownloadSelected.onclick = () => {
-            const sel = state.galleryItems.filter(i => state.selectedIds.has(i.id));
-            if (sel.length > 0) downloadItems(sel);
-        };
-
-        els.bulkDownload.onclick = () => downloadItems(state.galleryItems);
-
-        els.lightboxClose.onclick = closeLightbox;
-        els.lightboxPrev.onclick = () => navigateLightbox(-1);
-        els.lightboxNext.onclick = () => navigateLightbox(1);
-        els.lightboxDelete.onclick = () => {
-            const item = state.currentViewingItems[state.lightboxIndex];
-            if (item) {
-                deleteItems([item.id]);
-                closeLightbox();
-            }
-        };
-        els.lightboxDownload.onclick = () => {
-            const item = state.currentViewingItems[state.lightboxIndex];
-            if (item) downloadItems([item]);
-        };
-
-        els.lightboxShare.onclick = async () => {
-            const item = state.currentViewingItems[state.lightboxIndex];
-            if (item && navigator.share) {
-                const file = new File([item.blob], item.filename, { type: item.blob.type });
-                try {
-                    await navigator.share({ files: [file], title: 'Camera Pro' });
-                } catch (e) { console.error("Share failed", e); }
-            } else showToast("Sharing not supported");
-        };
-
-        document.querySelectorAll('.res-toggle').forEach(btn => {
+        document.querySelectorAll('.res-btn').forEach(btn => {
             btn.onclick = () => {
-                document.querySelectorAll('.res-toggle').forEach(b => b.classList.remove('active-chip'));
-                btn.classList.add('active-chip');
+                document.querySelectorAll('.res-btn').forEach(b => b.className = 'res-btn flex-1 py-4 rounded-2xl border border-gray-100 bg-white text-gray-600 text-sm font-medium');
+                btn.className = 'res-btn flex-1 py-4 rounded-2xl border border-gray-100 bg-blue-50 text-blue-700 text-sm font-medium';
                 state.settings.res = btn.dataset.res;
                 startCamera();
             };
         });
 
-        els.gridToggle.onclick = () => {
-            state.settings.grid = !state.settings.grid;
-            els.grid.style.opacity = state.settings.grid ? '1' : '0';
-            els.gridToggle.classList.toggle('bg-blue-600', state.settings.grid);
-            els.gridToggle.querySelector('.dot').style.transform = state.settings.grid ? 'translateX(20px)' : 'translateX(0)';
-        };
-
         document.querySelectorAll('.timer-btn').forEach(btn => {
             btn.onclick = () => {
-                document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active-chip'));
-                btn.classList.add('active-chip');
+                document.querySelectorAll('.timer-btn').forEach(b => b.className = 'timer-btn flex-1 py-3 rounded-2xl bg-white text-gray-600 text-sm');
+                btn.className = 'timer-btn flex-1 py-3 rounded-2xl bg-blue-50 text-blue-700 text-sm';
                 state.settings.timer = parseInt(btn.dataset.timer);
             };
         });
 
-        document.querySelectorAll('.filter-chip').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active-chip'));
-                btn.classList.add('active-chip');
-                state.currentFilter = btn.dataset.filter;
-                renderGallery();
-            };
-        });
+        document.getElementById('grid-toggle').onchange = (e) => {
+            els.grid.classList.toggle('opacity-100', e.target.checked);
+            els.grid.classList.toggle('opacity-0', !e.target.checked);
+        };
 
-        els.flash.onclick = async () => {
+        document.getElementById('select-mode-btn').onclick = (e) => {
+            state.isSelectMode = !state.isSelectMode;
+            e.target.textContent = state.isSelectMode ? 'Cancel' : 'Select';
+            if (!state.isSelectMode) {
+                state.selection.clear();
+                document.getElementById('batch-actions').classList.add('hidden');
+            }
+            renderGallery();
+        };
+
+        document.getElementById('delete-batch').onclick = async () => {
+            const tx = state.db.transaction(['media'], 'readwrite');
+            const store = tx.objectStore('media');
+            for (let id of state.selection) store.delete(id);
+            tx.oncomplete = () => {
+                state.selection.clear();
+                document.getElementById('batch-actions').classList.add('hidden');
+                loadMedia();
+            };
+        };
+
+        document.getElementById('lb-delete').onclick = () => {
+            const tx = state.db.transaction(['media'], 'readwrite');
+            tx.objectStore('media').delete(state.activeLightboxId);
+            tx.oncomplete = () => {
+                closeLightbox();
+                loadMedia();
+            };
+        };
+
+        document.getElementById('download-zip').onclick = async () => {
+            const zip = new JSZip();
+            const items = state.media.filter(m => state.selection.has(m.id));
+            items.forEach(item => zip.file(item.name, item.blob));
+            const content = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = `CameraPro_Export_${Date.now()}.zip`;
+            link.click();
+        };
+
+        document.getElementById('flash-btn').onclick = async () => {
             const track = state.stream?.getVideoTracks()[0];
-            const caps = track?.getCapabilities?.() || {};
+            if (!track) return;
+            const caps = track.getCapabilities?.() || {};
             if (caps.torch) {
                 state.flash = !state.flash;
                 await track.applyConstraints({ advanced: [{ torch: state.flash }] });
-                els.flash.querySelector('span').textContent = state.flash ? 'flash_on' : 'flash_off';
-                els.flash.classList.toggle('text-yellow-500', state.flash);
-            } else showToast("Flash not supported");
+                document.getElementById('flash-btn').querySelector('span').textContent = state.flash ? 'flash_on' : 'flash_off';
+                document.getElementById('flash-btn').classList.toggle('text-yellow-600', state.flash);
+            } else {
+                showToast("Flash not supported");
+            }
         };
 
+        // Initialize
         window.onload = async () => {
             await initDB();
             await startCamera();
-            await loadGalleryItems();
-            updateThumb();
+            await loadMedia();
         };
     </script>
 </body>
