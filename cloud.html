@@ -206,14 +206,18 @@
 </head>
 <body class="flex flex-col">
 
-    <!-- Permission Request Overlay (To trigger browser pop-up via user gesture) -->
-    <div id="permission-overlay" class="permission-overlay hidden">
-        <span class="material-symbols-rounded text-6xl mb-6 text-blue-400">photo_camera</span>
-        <h2 class="text-2xl font-medium mb-2">Camera Access Required</h2>
-        <p class="text-gray-400 mb-8 max-w-xs">To take photos and videos, please allow camera and microphone access when the browser asks.</p>
-        <button id="btn-request-perms" class="px-8 py-4 bg-blue-600 text-white rounded-full font-bold shadow-lg active:scale-95 transition-all">
-            Open Browser Prompt
-        </button>
+    <!-- Permission Request Overlay (Required for Safari/Chrome Pop-up) -->
+    <div id="permission-overlay" class="permission-overlay">
+        <div class="max-w-xs w-full">
+            <span class="material-symbols-rounded text-6xl mb-6 text-blue-400">photo_camera</span>
+            <h2 class="text-2xl font-medium mb-3">Camera Pro</h2>
+            <p class="text-gray-400 mb-8">Access your camera and microphone to start capturing photos and videos to the cloud.</p>
+            <button id="btn-request-perms" class="w-full py-4 bg-blue-600 text-white rounded-full font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-rounded">sensors</span>
+                Enable Camera
+            </button>
+            <p class="mt-6 text-[10px] uppercase tracking-widest text-gray-500 font-bold">Secure Browser Prompt</p>
+        </div>
     </div>
 
     <main class="relative flex-grow overflow-hidden">
@@ -281,7 +285,7 @@
                     <span class="text-sm font-medium text-blue-800">Your Gallery Key</span>
                     <span id="current-key-badge" class="key-badge">------</span>
                 </div>
-                <p class="text-xs text-blue-600 opacity-80">Share this key to sync between Safari, Chrome, and other devices.</p>
+                <p class="text-xs text-blue-600 opacity-80">Sync this key across Safari, Chrome, and Cloudflare Pages devices.</p>
                 <div class="flex gap-2">
                     <button id="copy-key" class="flex-1 py-3 bg-white text-blue-600 rounded-2xl text-sm font-bold shadow-sm active:scale-95 transition-transform">Copy Key</button>
                 </div>
@@ -295,7 +299,6 @@
                 </div>
             </div>
 
-            <!-- Restored: Grid Toggle UI -->
             <div class="flex items-center justify-between py-2 border-t border-gray-100">
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
@@ -452,33 +455,44 @@
             });
         }
 
-        // --- CAMERA LOGIC (Safari/Chrome Friendly) ---
+        // --- CAMERA LOGIC (Optimized for Safari/iOS) ---
         async function startCamera(isUserInitiated = false) {
-            if (state.stream) state.stream.getTracks().forEach(t => t.stop());
+            if (state.stream) {
+                state.stream.getTracks().forEach(t => t.stop());
+            }
             
             try {
-                state.stream = await navigator.mediaDevices.getUserMedia({
+                // Constraints optimized for high quality on mobile
+                const constraints = {
                     video: { 
                         facingMode: state.facingMode, 
                         width: { ideal: 1920 }, 
                         height: { ideal: 1080 } 
                     },
                     audio: true
-                });
+                };
+
+                state.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
+                // Critical for Safari: Assign stream to video source AND call play()
                 els.video.srcObject = state.stream;
+                await els.video.play();
+                
+                // Hide permission blocker
                 els.permOverlay.classList.add('hidden');
                 
                 const track = state.stream.getVideoTracks()[0].getSettings();
                 els.video.style.transform = track.facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
             } catch (e) {
-                console.error("Camera error:", e);
+                console.error("Camera permission error:", e);
                 els.permOverlay.classList.remove('hidden');
-                if (!isUserInitiated) showToast("Camera permission needed");
+                if (isUserInitiated) {
+                    showToast("Permission denied. Check browser settings.");
+                }
             }
         }
 
-        // --- DOWNLOAD LOGIC ---
+        // --- LOCAL DOWNLOAD HELPERS ---
         function downloadItem(item) {
             const a = document.createElement('a');
             a.href = item.data;
@@ -495,9 +509,12 @@
             showToast("Generating ZIP...");
             const zip = new JSZip();
             state.items.forEach((item, i) => {
-                const base64Data = item.data.split(',')[1];
-                const ext = item.type === 'image' ? 'jpg' : 'webm';
-                zip.file(`media_${i}_${item.timestamp}.${ext}`, base64Data, {base64: true});
+                const parts = item.data.split(',');
+                if (parts.length > 1) {
+                    const base64Data = parts[1];
+                    const ext = item.type === 'image' ? 'jpg' : 'webm';
+                    zip.file(`media_${i}_${item.timestamp}.${ext}`, base64Data, {base64: true});
+                }
             });
             const content = await zip.generateAsync({type: "blob"});
             const a = document.createElement('a');
@@ -507,6 +524,7 @@
             showToast("ZIP Downloaded");
         }
 
+        // --- CLOUD SYNC ---
         async function saveMedia(blob, type) {
             if (!state.galleryKey || !state.user) return;
             showToast("Syncing to cloud...");
@@ -539,7 +557,7 @@
                 ctx.scale(-1, 1);
             }
             ctx.drawImage(els.video, 0, 0);
-            els.canvas.toBlob(blob => saveMedia(blob, 'image'), 'image/jpeg', 0.7);
+            els.canvas.toBlob(blob => saveMedia(blob, 'image'), 'image/jpeg', 0.85);
             
             els.video.style.filter = 'brightness(2)';
             setTimeout(() => els.video.style.filter = '', 100);
@@ -549,17 +567,26 @@
             if (!state.isRecording) {
                 state.chunks = [];
                 try {
-                    state.mediaRecorder = new MediaRecorder(state.stream);
-                    state.mediaRecorder.ondataavailable = e => state.chunks.push(e.data);
+                    // Check for supported types for Safari vs Chrome
+                    let mimeType = 'video/webm';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        mimeType = 'video/mp4'; // Safari fallback
+                    }
+
+                    state.mediaRecorder = new MediaRecorder(state.stream, { mimeType });
+                    state.mediaRecorder.ondataavailable = e => {
+                        if (e.data.size > 0) state.chunks.push(e.data);
+                    };
                     state.mediaRecorder.onstop = () => {
-                        const blob = new Blob(state.chunks, { type: 'video/webm' });
+                        const blob = new Blob(state.chunks, { type: mimeType });
                         saveMedia(blob, 'video');
                     };
                     state.mediaRecorder.start();
                     state.isRecording = true;
                     els.shutter.classList.add('recording');
                 } catch (e) {
-                    showToast("Recording failed to start");
+                    console.error(e);
+                    showToast("Recording failed");
                 }
             } else {
                 state.mediaRecorder.stop();
@@ -568,7 +595,7 @@
             }
         }
 
-        // --- UI HELPERS ---
+        // --- UI UTILS ---
         function renderGallery() {
             els.galleryContent.innerHTML = '';
             if (state.items.length === 0) {
@@ -584,7 +611,7 @@
                     div.innerHTML = `<img src="${item.data}" loading="lazy">`;
                 } else {
                     div.innerHTML = `
-                        <video src="${item.data}#t=0.1"></video>
+                        <video src="${item.data}#t=0.1" playsinline></video>
                         <div class="absolute inset-0 flex items-center justify-center bg-black/20">
                             <span class="material-symbols-rounded text-white fill-icon">play_arrow</span>
                         </div>
@@ -599,8 +626,10 @@
             if (state.items.length > 0) {
                 els.lastThumb.src = state.items[0].data;
                 els.lastThumb.classList.remove('hidden');
+                els.galleryIcon.classList.add('hidden');
             } else {
                 els.lastThumb.classList.add('hidden');
+                els.galleryIcon.classList.remove('hidden');
             }
         }
 
@@ -609,7 +638,7 @@
             if (item.type === 'image') {
                 els.lbMain.innerHTML = `<img src="${item.data}" class="max-w-full max-h-full object-contain">`;
             } else {
-                els.lbMain.innerHTML = `<video src="${item.data}" controls autoplay class="max-w-full max-h-full"></video>`;
+                els.lbMain.innerHTML = `<video src="${item.data}" controls autoplay playsinline class="max-w-full max-h-full"></video>`;
             }
             document.getElementById('lb-date').textContent = new Date(item.timestamp).toLocaleTimeString();
             document.getElementById('lb-type').textContent = item.type;
@@ -622,7 +651,6 @@
             };
 
             document.getElementById('lb-download').onclick = () => downloadItem(item);
-
             els.lightbox.classList.add('active');
         }
 
@@ -697,7 +725,6 @@
             showToast("Key copied to clipboard!");
         };
 
-        // Fixed: No longer crashes because grid-toggle exists in HTML again
         els.gridToggle.onclick = () => {
             state.grid = !state.grid;
             els.grid.style.opacity = state.grid ? '1' : '0';
@@ -705,7 +732,7 @@
             els.gridToggle.querySelector('.dot').style.transform = state.grid ? 'translateX(20px)' : 'translateX(0)';
         };
 
-        // --- INIT ---
+        // --- BOOT ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 state.user = user;
@@ -715,6 +742,10 @@
 
         window.onload = async () => {
             await initAuth();
+            
+            // Check if we can auto-start (usually desktop)
+            // But for mobile, the Permission Overlay will be visible
+            // because startCamera() will likely throw an error without user interaction.
             startCamera();
         };
     </script>
