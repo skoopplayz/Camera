@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Material Camera Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <style>
+        :root {
+            --md-sys-color-primary: #1a73e8;
+            --md-sys-color-surface: #ffffff;
+            --md-sys-color-surface-container: #f1f3f4;
+            --md-sys-color-on-surface: #202124;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--md-sys-color-on-surface);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        #video-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .maps-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .shutter-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid white;
+            padding: 6px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .shutter-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: white;
+            transition: all 0.3s;
+        }
+
+        .mode-video .shutter-inner { background-color: #d93025; }
+        
+        .recording .shutter-inner {
+            border-radius: 8px;
+            transform: scale(0.6);
+        }
+
+        #camera-grid {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.3); }
+
+        .active-chip {
+            background-color: #e8f0fe !important;
+            color: #1a73e8 !important;
+            border-color: #1a73e8 !important;
+        }
+
+        #timer-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            color: white;
+            font-weight: 500;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-radius: 28px 28px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .bottom-sheet.active { transform: translateY(0); }
+
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 90;
+        }
+        .sheet-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            position: relative;
+            background: #eee;
+        }
+
+        .gallery-item img, .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        /* Pull-down handle style */
+        .drag-handle {
+            width: 40px;
+            height: 4px;
+            background: #ccc;
+            border-radius: 2px;
+            margin: 12px auto;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Viewport Container -->
+    <main class="relative flex-grow overflow-hidden">
+        <video id="video-preview" autoplay playsinline muted></video>
+        
+        <!-- Grid Overlay -->
+        <div id="camera-grid">
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+        </div>
+
+        <div id="timer-display" class="hidden"></div>
+
+        <!-- Top Navigation Bar -->
+        <div class="absolute top-4 left-4 right-4 z-50">
+            <div class="maps-card flex items-center h-14 px-4 gap-2">
+                <button id="flash-btn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <span class="material-symbols-rounded">flash_off</span>
+                </button>
+                <div class="flex-grow text-sm font-medium text-gray-700 px-2" id="recording-status">
+                    Camera Pro
+                </div>
+                <button id="settings-trigger" class="w-12 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 gap-1">
+                    <span class="material-symbols-rounded">tune</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Buttons (Bottom Floating) -->
+        <div class="absolute bottom-10 left-0 w-full flex flex-col items-center gap-6 z-40">
+            
+            <!-- Mode Switcher -->
+            <div class="maps-card flex p-1 gap-1">
+                <button id="btn-photo-mode" class="px-6 py-2 rounded-full text-sm font-medium active-chip transition-all">Photo</button>
+                <button id="btn-video-mode" class="px-6 py-2 rounded-full text-sm font-medium text-gray-600 transition-all">Video</button>
+            </div>
+
+            <!-- Main Controls -->
+            <div class="flex items-center gap-12">
+                <!-- Gallery Trigger -->
+                <button id="gallery-trigger" class="w-14 h-14 rounded-full bg-black/30 border-2 border-white/50 overflow-hidden backdrop-blur-md flex items-center justify-center">
+                    <span id="gallery-icon" class="material-symbols-rounded text-white opacity-80">image</span>
+                    <img id="last-capture-img" class="hidden w-full h-full object-cover">
+                </button>
+
+                <!-- Shutter -->
+                <button id="shutter" class="shutter-btn">
+                    <div class="shutter-inner"></div>
+                </button>
+
+                <!-- Switch Camera -->
+                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-3xl">flip_camera_android</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Overlays -->
+    <div id="sheet-overlay" class="sheet-overlay"></div>
+
+    <!-- Settings Bottom Sheet -->
+    <div id="settings-sheet" class="bottom-sheet">
+        <div class="drag-handle" id="settings-handle"></div>
+        <div class="px-6 pb-8 space-y-6">
+            <h3 class="text-xl font-medium">Camera Settings</h3>
+            
+            <div class="space-y-3">
+                <p class="text-sm font-medium text-gray-500">Resolution</p>
+                <div class="flex gap-2">
+                    <button data-res="HD" class="res-toggle flex-1 py-3 rounded-2xl border border-gray-200 text-sm font-medium active-chip">Full HD</button>
+                    <button data-res="4K" class="res-toggle flex-1 py-3 rounded-2xl border border-gray-200 text-sm font-medium">4K Ultra</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-rounded text-gray-600">grid_on</span>
+                    <span class="font-medium">Assistive Grid</span>
+                </div>
+                <button id="grid-toggle" class="w-12 h-6 bg-gray-200 rounded-full relative transition-colors">
+                    <div class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <p class="text-sm font-medium text-gray-500">Timer</p>
+                <div class="flex gap-2">
+                    <button data-timer="0" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm active-chip">Off</button>
+                    <button data-timer="3" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">3s</button>
+                    <button data-timer="10" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">10s</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Bottom Sheet -->
+    <div id="gallery-sheet" class="bottom-sheet">
+        <div class="drag-handle" id="gallery-handle"></div>
+        <div class="px-6 pb-4 flex justify-between items-center">
+            <h3 class="text-xl font-medium">Gallery</h3>
+            <div class="flex gap-2">
+                <button id="bulk-download" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium shadow-sm">
+                    <span class="material-symbols-rounded text-sm">download</span>
+                    Download All
+                </button>
+                <button id="clear-gallery" class="p-2 text-red-500 rounded-full hover:bg-red-50">
+                    <span class="material-symbols-rounded">delete</span>
+                </button>
+            </div>
+        </div>
+        <div id="gallery-content" class="gallery-grid">
+            <!-- Items injected via JS -->
+        </div>
+        <div id="empty-gallery" class="py-20 text-center text-gray-400 hidden">
+            <span class="material-symbols-rounded text-4xl block mb-2">image_not_supported</span>
+            <p>Your gallery is empty</p>
+        </div>
+    </div>
+
+    <canvas id="capture-canvas" class="hidden"></canvas>
+
+    <script>
+        // Database Setup (IndexedDB for storing media)
+        const DB_NAME = "CameraProDB";
+        const STORE_NAME = "media";
+        let db;
+
+        const initDB = () => {
+            return new Promise((resolve) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve();
+                };
+            });
+        };
+
+        const state = {
+            stream: null,
+            mode: 'photo',
+            isRecording: false,
+            facingMode: 'environment', 
+            flash: false,
+            mediaRecorder: null,
+            chunks: [],
+            settings: { res: 'HD', grid: false, timer: 0 },
+            timerRunning: false
+        };
+
+        const els = {
+            video: document.getElementById('video-preview'),
+            shutter: document.getElementById('shutter'),
+            modePhoto: document.getElementById('btn-photo-mode'),
+            modeVideo: document.getElementById('btn-video-mode'),
+            flash: document.getElementById('flash-btn'),
+            flip: document.getElementById('flip-btn'),
+            canvas: document.getElementById('capture-canvas'),
+            settingsTrigger: document.getElementById('settings-trigger'),
+            settingsSheet: document.getElementById('settings-sheet'),
+            galleryTrigger: document.getElementById('gallery-trigger'),
+            gallerySheet: document.getElementById('gallery-sheet'),
+            overlay: document.getElementById('sheet-overlay'),
+            grid: document.getElementById('camera-grid'),
+            gridToggle: document.getElementById('grid-toggle'),
+            timerDisplay: document.getElementById('timer-display'),
+            lastThumb: document.getElementById('last-capture-img'),
+            galleryIcon: document.getElementById('gallery-icon'),
+            status: document.getElementById('recording-status'),
+            galleryContent: document.getElementById('gallery-content'),
+            emptyGallery: document.getElementById('empty-gallery'),
+            bulkDownload: document.getElementById('bulk-download'),
+            clearGallery: document.getElementById('clear-gallery')
+        };
+
+        // --- Camera Logic ---
+
+        async function startCamera() {
+            if (state.stream) {
+                state.stream.getTracks().forEach(t => t.stop());
+            }
+
+            const getConstraints = (mode) => ({
+                video: {
+                    facingMode: mode,
+                    width: state.settings.res === '4K' ? { ideal: 3840 } : { ideal: 1920 },
+                    height: state.settings.res === '4K' ? { ideal: 2160 } : { ideal: 1080 }
+                },
+                audio: true
+            });
+
+            try {
+                // Try requested mode
+                state.stream = await navigator.mediaDevices.getUserMedia(getConstraints(state.facingMode));
+            } catch (err) {
+                console.warn(`Camera mode ${state.facingMode} failed, trying fallback...`, err);
+                try {
+                    // Fallback to any available camera if the specific facingMode (like 'environment') isn't found
+                    state.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                } catch (fallbackErr) {
+                    console.error("Critical: Device has no camera or permission denied.", fallbackErr);
+                    return;
+                }
+            }
+
+            if (state.stream) {
+                els.video.srcObject = state.stream;
+                
+                // Determine actual facing mode from the active track
+                const track = state.stream.getVideoTracks()[0];
+                const actualSettings = track.getSettings();
+                const actualFacing = actualSettings.facingMode || state.facingMode;
+                
+                els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+            }
+        }
+
+        async function saveToGallery(blob, type) {
+            if (!db) return;
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            const store = transaction.objectStore(STORE_NAME);
+            const item = {
+                blob: blob,
+                type: type,
+                timestamp: Date.now(),
+                filename: `${type === 'image' ? 'IMG' : 'VID'}_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`
+            };
+            store.add(item);
+            
+            const url = URL.createObjectURL(blob);
+            els.lastThumb.src = url;
+            els.lastThumb.classList.remove('hidden');
+            els.galleryIcon.classList.add('hidden');
+        }
+
+        async function handleShutter() {
+            if (state.timerRunning) return;
+
+            if (state.settings.timer > 0 && !state.isRecording) {
+                state.timerRunning = true;
+                let count = state.settings.timer;
+                els.timerDisplay.classList.remove('hidden');
+                els.timerDisplay.textContent = count;
+                
+                const interval = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(interval);
+                        els.timerDisplay.classList.add('hidden');
+                        state.timerRunning = false;
+                        executeAction();
+                    } else {
+                        els.timerDisplay.textContent = count;
+                    }
+                }, 1000);
+            } else {
+                executeAction();
+            }
+        }
+
+        function executeAction() {
+            if (state.mode === 'photo') takePhoto();
+            else toggleRecording();
+        }
+
+        function takePhoto() {
+            if (!els.video.videoWidth) return;
+            els.canvas.width = els.video.videoWidth;
+            els.canvas.height = els.video.videoHeight;
+            const ctx = els.canvas.getContext('2d');
+            
+            // Apply mirroring for capture if using front camera
+            const track = state.stream?.getVideoTracks()[0];
+            const isUser = track?.getSettings().facingMode === 'user' || state.facingMode === 'user';
+            
+            if (isUser) {
+                ctx.translate(els.canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(els.video, 0, 0);
+            
+            els.canvas.toBlob(blob => {
+                saveToGallery(blob, 'image');
+            }, 'image/jpeg', 0.95);
+
+            els.video.style.filter = 'brightness(2)';
+            setTimeout(() => els.video.style.filter = '', 100);
+        }
+
+        let recordInterval;
+        let startTime;
+        function toggleRecording() {
+            if (!state.isRecording) {
+                if (!state.stream) return;
+                state.chunks = [];
+                let mimeType = 'video/webm;codecs=vp9,opus';
+                if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
+
+                try {
+                    state.mediaRecorder = new MediaRecorder(state.stream, { mimeType });
+                    state.mediaRecorder.ondataavailable = e => {
+                        if (e.data.size > 0) state.chunks.push(e.data);
+                    };
+
+                    state.mediaRecorder.onstop = () => {
+                        const blob = new Blob(state.chunks, { type: state.mediaRecorder.mimeType });
+                        saveToGallery(blob, 'video');
+                        clearInterval(recordInterval);
+                        els.status.textContent = "Camera Pro";
+                        els.status.classList.remove('text-red-500');
+                    };
+
+                    state.mediaRecorder.start();
+                    state.isRecording = true;
+                    els.shutter.classList.add('recording');
+                    els.status.classList.add('text-red-500');
+                    
+                    startTime = Date.now();
+                    recordInterval = setInterval(() => {
+                        const diff = Math.floor((Date.now() - startTime) / 1000);
+                        const m = Math.floor(diff/60).toString().padStart(2, '0');
+                        const s = (diff%60).toString().padStart(2, '0');
+                        els.status.textContent = `Recording • ${m}:${s}`;
+                    }, 1000);
+                } catch (e) {
+                    console.error("Failed to start MediaRecorder:", e);
+                }
+
+            } else {
+                if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+                    state.mediaRecorder.stop();
+                }
+                state.isRecording = false;
+                els.shutter.classList.remove('recording');
+            }
+        }
+
+        // --- Gallery UI Logic ---
+
+        async function openGallery() {
+            if (!db) return;
+            els.galleryContent.innerHTML = '';
+            const transaction = db.transaction([STORE_NAME], "readonly");
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const items = request.result.reverse();
+                if (items.length === 0) {
+                    els.emptyGallery.classList.remove('hidden');
+                } else {
+                    els.emptyGallery.classList.add('hidden');
+                    items.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'gallery-item';
+                        const url = URL.createObjectURL(item.blob);
+                        
+                        if (item.type === 'image') {
+                            div.innerHTML = `<img src="${url}" loading="lazy">`;
+                        } else {
+                            div.innerHTML = `
+                                <video src="${url}"></video>
+                                <div class="video-badge">VIDEO</div>
+                            `;
+                        }
+                        els.galleryContent.appendChild(div);
+                    });
+                }
+            };
+            
+            els.gallerySheet.classList.add('active');
+            els.overlay.classList.add('active');
+        }
+
+        async function bulkDownload() {
+            if (!db) return;
+            const transaction = db.transaction([STORE_NAME], "readonly");
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+
+            request.onsuccess = async () => {
+                const items = request.result;
+                if (items.length === 0) return;
+
+                const zip = new JSZip();
+                items.forEach(item => {
+                    zip.file(item.filename, item.blob);
+                });
+
+                const content = await zip.generateAsync({ type: "blob" });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `CameraPro_Export_${Date.now()}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+        }
+
+        function closeSheets() {
+            els.settingsSheet.classList.remove('active');
+            els.gallerySheet.classList.remove('active');
+            els.overlay.classList.remove('active');
+        }
+
+        // --- Listeners ---
+
+        els.settingsTrigger.onclick = () => {
+            els.settingsSheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
+
+        els.galleryTrigger.onclick = openGallery;
+        els.overlay.onclick = closeSheets;
+        document.getElementById('settings-handle').onclick = closeSheets;
+        document.getElementById('gallery-handle').onclick = closeSheets;
+
+        els.modePhoto.onclick = () => {
+            state.mode = 'photo';
+            els.modePhoto.classList.add('active-chip');
+            els.modeVideo.classList.remove('active-chip');
+            document.body.classList.remove('mode-video');
+        };
+
+        els.modeVideo.onclick = () => {
+            state.mode = 'video';
+            els.modeVideo.classList.add('active-chip');
+            els.modePhoto.classList.remove('active-chip');
+            document.body.classList.add('mode-video');
+        };
+
+        els.shutter.onclick = handleShutter;
+
+        els.flip.onclick = () => {
+            state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+            startCamera();
+        };
+
+        document.querySelectorAll('.res-toggle').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.res-toggle').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.settings.res = btn.dataset.res;
+                startCamera();
+            };
+        });
+
+        els.gridToggle.onclick = () => {
+            state.settings.grid = !state.settings.grid;
+            els.grid.style.opacity = state.settings.grid ? '1' : '0';
+            els.gridToggle.classList.toggle('bg-blue-600', state.settings.grid);
+            els.gridToggle.querySelector('.dot').style.transform = state.settings.grid ? 'translateX(24px)' : 'translateX(0)';
+        };
+
+        document.querySelectorAll('.timer-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.settings.timer = parseInt(btn.dataset.timer);
+            };
+        });
+
+        els.flash.onclick = async () => {
+            if (!state.stream) return;
+            const track = state.stream.getVideoTracks()[0];
+            if (!track) return;
+            
+            try {
+                // Check for capabilities safely
+                const caps = (typeof track.getCapabilities === 'function') ? track.getCapabilities() : {};
+                if (caps.torch) {
+                    state.flash = !state.flash;
+                    await track.applyConstraints({ advanced: [{ torch: state.flash }] });
+                    els.flash.querySelector('span').textContent = state.flash ? 'flash_on' : 'flash_off';
+                    els.flash.classList.toggle('text-yellow-500', state.flash);
+                } else {
+                    console.log("Torch functionality not available on this camera.");
+                }
+            } catch (e) {
+                console.warn("Could not toggle flash:", e);
+            }
+        };
+
+        els.bulkDownload.onclick = bulkDownload;
+        els.clearGallery.onclick = () => {
+            if (!db) return;
+            if (confirm('Delete all captures?')) {
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                transaction.objectStore(STORE_NAME).clear();
+                transaction.oncomplete = () => {
+                    els.galleryContent.innerHTML = '';
+                    els.emptyGallery.classList.remove('hidden');
+                    els.lastThumb.classList.add('hidden');
+                    els.galleryIcon.classList.remove('hidden');
+                };
+            }
+        };
+
+        window.onload = async () => {
+            try {
+                await initDB();
+                await startCamera();
+                
+                // Load last thumbnail
+                const transaction = db.transaction([STORE_NAME], "readonly");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    if (request.result && request.result.length > 0) {
+                        const last = request.result[request.result.length - 1];
+                        const url = URL.createObjectURL(last.blob);
+                        els.lastThumb.src = url;
+                        els.lastThumb.classList.remove('hidden');
+                        els.galleryIcon.classList.add('hidden');
+                    }
+                };
+            } catch (e) {
+                console.error("Initialization failed:", e);
+            }
+        };
+    </script>
+</body>
+</html>
