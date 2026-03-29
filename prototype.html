@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA / iOS Home Screen Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Camera Pro">
+    
+    <!-- iOS Home Screen Icon (Material Camera SVG) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' rx='5' fill='%231a73e8'/%3E%3Cpath d='M12 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6z' fill='white'/%3E%3Cpath d='M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5s5 2.24 5 5s-2.24 5-5 5z' fill='white'/%3E%3C/svg%3E">
+
+    <title>Material Camera Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    
+    <style>
+        :root {
+            --md-sys-color-primary: #1a73e8;
+            --md-sys-color-surface: #ffffff;
+            --md-sys-color-on-surface: #202124;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--md-sys-color-on-surface);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        #video-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .maps-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .shutter-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid white;
+            padding: 6px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .shutter-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: white;
+            transition: all 0.3s;
+        }
+
+        .mode-video .shutter-inner { background-color: #d93025; }
+        
+        .recording .shutter-inner {
+            border-radius: 8px;
+            transform: scale(0.6);
+        }
+
+        #camera-grid {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.3); }
+
+        .active-chip {
+            background-color: #e8f0fe !important;
+            color: #1a73e8 !important;
+            border-color: #1a73e8 !important;
+        }
+
+        #timer-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            color: white;
+            font-weight: 500;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-radius: 28px 28px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .bottom-sheet.active { transform: translateY(0); }
+
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 90;
+        }
+        .sheet-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            position: relative;
+            background: #eee;
+        }
+
+        .gallery-item img, .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .drag-handle {
+            width: 40px;
+            height: 4px;
+            background: #ccc;
+            border-radius: 2px;
+            margin: 12px auto;
+            cursor: pointer;
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(32, 33, 36, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        /* Lock Indicator */
+        .recording-lock {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <main class="relative flex-grow overflow-hidden">
+        <video id="video-preview" autoplay playsinline muted></video>
+        
+        <div id="camera-grid">
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+        </div>
+
+        <div id="timer-display" class="hidden"></div>
+        <div id="toast"></div>
+
+        <!-- Top Navigation Bar -->
+        <div class="absolute top-12 left-4 right-4 z-50">
+            <div class="maps-card flex items-center h-14 px-4 gap-2">
+                <button id="flash-btn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <span class="material-symbols-rounded">flash_off</span>
+                </button>
+                <div class="flex-grow text-sm font-medium text-gray-700 px-2 text-center" id="recording-status">
+                    Camera Pro
+                </div>
+                <button id="settings-trigger" class="w-12 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 gap-1">
+                    <span class="material-symbols-rounded">tune</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Buttons (Bottom Floating) -->
+        <div class="absolute bottom-10 left-0 w-full flex flex-col items-center gap-6 z-40">
+            <!-- Mode Switcher -->
+            <div id="mode-switcher" class="maps-card flex p-1 gap-1 transition-opacity">
+                <button id="btn-photo-mode" class="px-6 py-2 rounded-full text-sm font-medium active-chip transition-all">Photo</button>
+                <button id="btn-video-mode" class="px-6 py-2 rounded-full text-sm font-medium text-gray-600 transition-all">Video</button>
+            </div>
+
+            <!-- Main Controls -->
+            <div class="flex items-center gap-12">
+                <!-- Gallery Trigger -->
+                <button id="gallery-trigger" class="w-14 h-14 rounded-full bg-black/30 border-2 border-white/50 overflow-hidden backdrop-blur-md flex items-center justify-center">
+                    <span id="gallery-icon" class="material-symbols-rounded text-white opacity-80">image</span>
+                    <img id="last-capture-img" class="hidden w-full h-full object-cover">
+                </button>
+
+                <!-- Shutter -->
+                <button id="shutter" class="shutter-btn">
+                    <div class="shutter-inner"></div>
+                </button>
+
+                <!-- Switch Camera -->
+                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center transition-opacity">
+                    <span class="material-symbols-rounded text-white text-3xl">flip_camera_android</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <div id="sheet-overlay" class="sheet-overlay"></div>
+
+    <!-- Settings Sheet -->
+    <div id="settings-sheet" class="bottom-sheet">
+        <div class="drag-handle" id="settings-handle"></div>
+        <div class="px-6 pb-8 space-y-6">
+            <h3 class="text-xl font-medium">Camera Settings</h3>
+            
+            <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-rounded text-gray-600">grid_on</span>
+                    <span class="font-medium">Assistive Grid</span>
+                </div>
+                <button id="grid-toggle" class="w-12 h-6 bg-gray-200 rounded-full relative transition-colors">
+                    <div class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <p class="text-sm font-medium text-gray-500">Timer</p>
+                <div class="flex gap-2">
+                    <button data-timer="0" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm active-chip">Off</button>
+                    <button data-timer="3" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">3s</button>
+                    <button data-timer="10" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">10s</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Sheet -->
+    <div id="gallery-sheet" class="bottom-sheet">
+        <div class="drag-handle" id="gallery-handle"></div>
+        <div class="px-6 pb-4 flex justify-between items-center">
+            <h3 class="text-xl font-medium">Gallery</h3>
+            <div class="flex gap-2">
+                <button id="bulk-download" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium shadow-sm active:scale-95 transition-transform">
+                    <span class="material-symbols-rounded text-sm">ios_share</span>
+                    Export All
+                </button>
+                <button id="clear-gallery" class="p-2 text-red-500 rounded-full hover:bg-red-50">
+                    <span class="material-symbols-rounded">delete</span>
+                </button>
+            </div>
+        </div>
+        <div id="gallery-content" class="gallery-grid"></div>
+        <div id="empty-gallery" class="py-20 text-center text-gray-400 hidden">
+            <span class="material-symbols-rounded text-4xl block mb-2">image_not_supported</span>
+            <p>Your gallery is empty</p>
+        </div>
+    </div>
+
+    <canvas id="capture-canvas" class="hidden"></canvas>
+
+    <script>
+        const DB_NAME = "CameraProDB";
+        const STORE_NAME = "media";
+        let db;
+
+        const state = {
+            stream: null,
+            mode: 'photo',
+            isRecording: false,
+            facingMode: 'environment', 
+            flash: false,
+            mediaRecorder: null,
+            chunks: [],
+            settings: { res: 'HD', grid: false, timer: 0 },
+            timerRunning: false,
+            startTime: null
+        };
+
+        const els = {
+            video: document.getElementById('video-preview'),
+            shutter: document.getElementById('shutter'),
+            modeSwitcher: document.getElementById('mode-switcher'),
+            modePhoto: document.getElementById('btn-photo-mode'),
+            modeVideo: document.getElementById('btn-video-mode'),
+            flash: document.getElementById('flash-btn'),
+            flip: document.getElementById('flip-btn'),
+            canvas: document.getElementById('capture-canvas'),
+            settingsTrigger: document.getElementById('settings-trigger'),
+            settingsSheet: document.getElementById('settings-sheet'),
+            galleryTrigger: document.getElementById('gallery-trigger'),
+            gallerySheet: document.getElementById('gallery-sheet'),
+            overlay: document.getElementById('sheet-overlay'),
+            grid: document.getElementById('camera-grid'),
+            gridToggle: document.getElementById('grid-toggle'),
+            timerDisplay: document.getElementById('timer-display'),
+            lastThumb: document.getElementById('last-capture-img'),
+            galleryIcon: document.getElementById('gallery-icon'),
+            status: document.getElementById('recording-status'),
+            galleryContent: document.getElementById('gallery-content'),
+            emptyGallery: document.getElementById('empty-gallery'),
+            bulkDownload: document.getElementById('bulk-download'),
+            clearGallery: document.getElementById('clear-gallery'),
+            toast: document.getElementById('toast')
+        };
+
+        // --- Core Functions ---
+
+        async function initDB() {
+            return new Promise((resolve) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve();
+                };
+            });
+        }
+
+        async function startCamera() {
+            if (state.stream) {
+                state.stream.getTracks().forEach(t => t.stop());
+            }
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: state.facingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: true
+                };
+                state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                els.video.srcObject = state.stream;
+                
+                const track = state.stream.getVideoTracks()[0];
+                const actualFacing = track.getSettings().facingMode || state.facingMode;
+                els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+            } catch (err) {
+                showToast("Camera access denied or unavailable");
+            }
+        }
+
+        function showToast(msg) {
+            els.toast.textContent = msg;
+            els.toast.style.opacity = '1';
+            setTimeout(() => els.toast.style.opacity = '0', 3000);
+        }
+
+        async function saveToGallery(blob, type) {
+            if (!db) return;
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            const store = transaction.objectStore(STORE_NAME);
+            const item = {
+                blob: blob,
+                type: type,
+                timestamp: Date.now(),
+                filename: `${type === 'image' ? 'IMG' : 'VID'}_${Date.now()}.${type === 'image' ? 'jpg' : 'webm'}`
+            };
+            store.add(item);
+            
+            const url = URL.createObjectURL(blob);
+            els.lastThumb.src = url;
+            els.lastThumb.classList.remove('hidden');
+            els.galleryIcon.classList.add('hidden');
+        }
+
+        function handleShutter() {
+            if (state.timerRunning) return;
+            if (state.settings.timer > 0 && !state.isRecording) {
+                state.timerRunning = true;
+                let count = state.settings.timer;
+                els.timerDisplay.classList.remove('hidden');
+                els.timerDisplay.textContent = count;
+                const interval = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(interval);
+                        els.timerDisplay.classList.add('hidden');
+                        state.timerRunning = false;
+                        executeAction();
+                    } else { els.timerDisplay.textContent = count; }
+                }, 1000);
+            } else { executeAction(); }
+        }
+
+        function executeAction() {
+            if (state.mode === 'photo') takePhoto();
+            else toggleRecording();
+        }
+
+        function takePhoto() {
+            if (!els.video.videoWidth) return;
+            els.canvas.width = els.video.videoWidth;
+            els.canvas.height = els.video.videoHeight;
+            const ctx = els.canvas.getContext('2d');
+            
+            const track = state.stream?.getVideoTracks()[0];
+            const isUser = track?.getSettings().facingMode === 'user' || state.facingMode === 'user';
+            
+            if (isUser) {
+                ctx.translate(els.canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(els.video, 0, 0);
+            els.canvas.toBlob(blob => saveToGallery(blob, 'image'), 'image/jpeg', 0.95);
+
+            els.video.style.filter = 'brightness(2)';
+            setTimeout(() => els.video.style.filter = '', 100);
+        }
+
+        let recordInterval;
+        function toggleRecording() {
+            if (!state.isRecording) {
+                if (!state.stream) return;
+                state.chunks = [];
+                let mimeType = 'video/webm;codecs=vp9,opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+                if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+
+                try {
+                    state.mediaRecorder = new MediaRecorder(state.stream, mimeType ? { mimeType } : {});
+                    state.mediaRecorder.ondataavailable = e => { if (e.data.size > 0) state.chunks.push(e.data); };
+                    state.mediaRecorder.onstop = () => {
+                        const blob = new Blob(state.chunks, { type: state.mediaRecorder.mimeType });
+                        saveToGallery(blob, 'video');
+                        clearInterval(recordInterval);
+                        els.status.textContent = "Camera Pro";
+                        els.status.classList.remove('text-red-500');
+                        els.flip.style.opacity = '1';
+                        els.modeSwitcher.style.opacity = '1';
+                    };
+
+                    state.mediaRecorder.start();
+                    state.isRecording = true;
+                    els.shutter.classList.add('recording');
+                    els.status.classList.add('text-red-500');
+                    els.flip.style.opacity = '0.3'; 
+                    els.modeSwitcher.style.opacity = '0.3';
+                    
+                    state.startTime = Date.now();
+                    recordInterval = setInterval(() => {
+                        const diff = Math.floor((Date.now() - state.startTime) / 1000);
+                        const m = Math.floor(diff/60).toString().padStart(2, '0');
+                        const s = (diff%60).toString().padStart(2, '0');
+                        els.status.textContent = `Recording • ${m}:${s}`;
+                    }, 1000);
+                } catch (e) { console.error(e); }
+            } else {
+                if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
+                state.isRecording = false;
+                els.shutter.classList.remove('recording');
+            }
+        }
+
+        // --- Export Logic ---
+
+        async function bulkExport() {
+            if (!db) return;
+            const transaction = db.transaction([STORE_NAME], "readonly");
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+
+            request.onsuccess = async () => {
+                const items = request.result;
+                if (items.length === 0) return;
+
+                const zip = new JSZip();
+                items.forEach(item => { zip.file(item.filename, item.blob); });
+                const content = await zip.generateAsync({ type: "blob" });
+                const file = new File([content], `CameraPro_Export_${Date.now()}.zip`, { type: 'application/zip' });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Camera Pro Export',
+                            text: `Exporting ${items.length} captures`
+                        });
+                    } catch (e) { downloadFallback(content); }
+                } else {
+                    downloadFallback(content);
+                }
+            };
+        }
+
+        function downloadFallback(blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CameraPro_Export_${Date.now()}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // --- Listeners ---
+
+        els.flip.onclick = () => {
+            if (state.isRecording) {
+                showToast("Cannot flip while recording");
+                return;
+            }
+            state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+            startCamera();
+        };
+
+        const switchMode = (mode) => {
+            if (state.isRecording) {
+                showToast("Stop recording to switch modes");
+                return;
+            }
+            state.mode = mode;
+            if (mode === 'photo') {
+                els.modePhoto.classList.add('active-chip');
+                els.modeVideo.classList.remove('active-chip');
+                document.body.classList.remove('mode-video');
+            } else {
+                els.modeVideo.classList.add('active-chip');
+                els.modePhoto.classList.remove('active-chip');
+                document.body.classList.add('mode-video');
+            }
+        };
+
+        els.modePhoto.onclick = () => switchMode('photo');
+        els.modeVideo.onclick = () => switchMode('video');
+
+        els.galleryTrigger.onclick = async () => {
+            if (!db) return;
+            els.galleryContent.innerHTML = '';
+            const transaction = db.transaction([STORE_NAME], "readonly");
+            const request = transaction.objectStore(STORE_NAME).getAll();
+            request.onsuccess = () => {
+                const items = request.result.reverse();
+                if (items.length === 0) els.emptyGallery.classList.remove('hidden');
+                else {
+                    els.emptyGallery.classList.add('hidden');
+                    items.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'gallery-item';
+                        const url = URL.createObjectURL(item.blob);
+                        div.innerHTML = item.type === 'image' 
+                            ? `<img src="${url}" loading="lazy">` 
+                            : `<video src="${url}"></video><div class="video-badge">VIDEO</div>`;
+                        els.galleryContent.appendChild(div);
+                    });
+                }
+            };
+            els.gallerySheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
+
+        els.bulkDownload.onclick = bulkExport;
+
+        els.clearGallery.onclick = () => {
+            if (confirm('Delete all captures?')) {
+                const tx = db.transaction([STORE_NAME], "readwrite");
+                tx.objectStore(STORE_NAME).clear();
+                tx.oncomplete = () => {
+                    els.galleryContent.innerHTML = '';
+                    els.emptyGallery.classList.remove('hidden');
+                    els.lastThumb.classList.add('hidden');
+                    els.galleryIcon.classList.remove('hidden');
+                };
+            }
+        };
+
+        els.shutter.onclick = handleShutter;
+        els.settingsTrigger.onclick = () => {
+            els.settingsSheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
+        els.overlay.onclick = () => {
+            els.settingsSheet.classList.remove('active');
+            els.gallerySheet.classList.remove('active');
+            els.overlay.classList.remove('active');
+        };
+
+        els.gridToggle.onclick = () => {
+            state.settings.grid = !state.settings.grid;
+            els.grid.style.opacity = state.settings.grid ? '1' : '0';
+            els.gridToggle.classList.toggle('bg-blue-600', state.settings.grid);
+            els.gridToggle.querySelector('.dot').style.transform = state.settings.grid ? 'translateX(24px)' : 'translateX(0)';
+        };
+
+        document.querySelectorAll('.timer-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.settings.timer = parseInt(btn.dataset.timer);
+            };
+        });
+
+        window.onload = async () => {
+            await initDB();
+            await startCamera();
+            const tx = db.transaction([STORE_NAME], "readonly");
+            const req = tx.objectStore(STORE_NAME).getAll();
+            req.onsuccess = () => {
+                if (req.result.length > 0) {
+                    const last = req.result[req.result.length - 1];
+                    els.lastThumb.src = URL.createObjectURL(last.blob);
+                    els.lastThumb.classList.remove('hidden');
+                    els.galleryIcon.classList.add('hidden');
+                }
+            };
+        };
+    </script>
+</body>
+</html>
