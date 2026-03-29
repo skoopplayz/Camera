@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Material Camera Pro</title>
+    <title>Material Camera Pro + Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
@@ -88,7 +88,7 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.25); }
+        #camera-grid div { border: 0.5px solid rgba(255,255,255,0.15); }
 
         .active-chip {
             background-color: var(--md-sys-color-secondary-container) !important;
@@ -149,77 +149,11 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.3s ease;
         }
 
         .gallery-item.selected {
             padding: 8px;
             background: var(--md-sys-color-primary);
-        }
-        .gallery-item.selected img, .gallery-item.selected video {
-            border-radius: 12px;
-            transform: scale(0.95);
-        }
-
-        .video-thumb-overlay {
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 70%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .video-thumb-play {
-            width: 32px;
-            height: 32px;
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .video-badge {
-            position: absolute;
-            bottom: 6px;
-            right: 6px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
-            color: white;
-            font-size: 10px;
-            padding: 3px 8px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 500;
-        }
-
-        .select-check {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            width: 24px;
-            height: 24px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--md-sys-color-primary);
-            opacity: 0;
-            transform: scale(0.5);
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 10;
-        }
-
-        .selected .select-check {
-            opacity: 1;
-            transform: scale(1);
         }
 
         #lightbox {
@@ -232,101 +166,14 @@
         }
         #lightbox.active { display: flex; }
 
-        .video-player-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        .custom-controls {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,0.7));
-            padding: 40px 20px 20px 20px;
-            transition: opacity 0.3s;
-            z-index: 10;
-        }
-
-        .video-progress-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-            margin-bottom: 16px;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .video-progress-fill {
-            height: 100%;
-            background: white;
-            border-radius: 2px;
-            width: 0%;
-        }
-
-        .play-pause-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80px;
-            height: 80px;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(12px);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            opacity: 0;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            pointer-events: none;
-            z-index: 20;
-        }
-
-        .play-pause-center.visible {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-
-        .lightbox-nav-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 210;
-        }
-
-        .drag-handle {
-            width: 36px;
-            height: 5px;
-            background: #e0e0e0;
-            border-radius: 3px;
-            margin: 12px auto;
-        }
-
-        .filter-chip {
-            padding: 8px 20px;
+        .key-badge {
+            background: #e8f0fe;
+            color: #1967d2;
+            padding: 4px 12px;
             border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            background: #f1f3f4;
-            color: #444746;
-            transition: all 0.2s;
-            white-space: nowrap;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
         }
 
         #toast {
@@ -341,25 +188,11 @@
             font-size: 14px;
             z-index: 300;
             opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
+            transition: opacity 0.3s;
             pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Cloud Indicator */
-        .sync-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: #e8f0fe;
-            color: #1967d2;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
     </style>
 </head>
 <body class="flex flex-col">
@@ -373,28 +206,25 @@
             <div></div><div></div><div></div>
         </div>
 
-        <div id="timer-display" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] text-white font-medium drop-shadow-2xl pointer-events-none z-50 hidden"></div>
-
+        <!-- Header -->
         <div class="absolute top-4 left-4 right-4 z-40">
             <div class="maps-card flex items-center h-14 px-3 gap-1">
-                <button id="flash-btn" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
-                    <span class="material-symbols-rounded">flash_off</span>
+                <button id="flash-btn" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-700">
+                    <span class="material-symbols-rounded">cloud_sync</span>
                 </button>
                 <div class="flex-grow flex flex-col items-center justify-center overflow-hidden">
-                    <span class="text-sm font-medium text-gray-800 truncate" id="recording-status">Camera Pro</span>
-                    <div id="sync-status" class="hidden">
-                        <span class="text-[10px] text-blue-600 flex items-center gap-1">
-                            <span class="material-symbols-rounded" style="font-size:12px;">cloud_sync</span>
-                            Syncing...
-                        </span>
-                    </div>
+                    <span class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Cloud Gallery</span>
+                    <span id="display-key" class="text-sm font-medium text-gray-800 truncate">Connecting...</span>
                 </div>
-                <button id="settings-trigger" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+                <button id="settings-trigger" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-700">
                     <span class="material-symbols-rounded">settings</span>
                 </button>
             </div>
         </div>
 
+        <div id="timer-display" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] text-white font-medium drop-shadow-2xl pointer-events-none z-50 hidden"></div>
+
+        <!-- Bottom UI -->
         <div class="absolute bottom-10 left-0 w-full flex flex-col items-center gap-8 z-40">
             <div id="mode-switcher" class="maps-card flex p-1 gap-1">
                 <button id="btn-photo-mode" class="px-7 py-2 rounded-full text-sm font-medium active-chip transition-all">Photo</button>
@@ -411,7 +241,7 @@
                     <div class="shutter-inner"></div>
                 </button>
 
-                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/40 border border-white/20 backdrop-blur-xl flex items-center justify-center shadow-2xl transition-transform active:scale-90">
+                <button id="flip-btn" class="w-14 h-14 rounded-full bg-black/40 border border-white/20 backdrop-blur-xl flex items-center justify-center shadow-2xl">
                     <span class="material-symbols-rounded text-white text-3xl">flip_camera_android</span>
                 </button>
             </div>
@@ -421,188 +251,100 @@
     <div id="sheet-overlay" class="sheet-overlay"></div>
     <div id="toast"></div>
 
+    <!-- Settings Sheet -->
     <div id="settings-sheet" class="bottom-sheet">
-        <div class="drag-handle" onclick="closeSheets()"></div>
-        <div class="px-6 pb-8 space-y-6 overflow-y-auto">
-            <h3 class="text-xl font-medium text-gray-900">Settings</h3>
+        <div class="w-10 h-1.5 bg-gray-200 rounded-full mx-auto my-3" onclick="closeSheets()"></div>
+        <div class="px-6 pb-8 space-y-6">
+            <h3 class="text-xl font-medium text-gray-900">Cloud Settings</h3>
             
-            <!-- Cloud Section -->
-            <div class="bg-blue-50 rounded-3xl p-5 space-y-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                            <span class="material-symbols-rounded text-white">cloud_done</span>
-                        </div>
-                        <div>
-                            <span class="block font-medium text-blue-900">Cloud Sync</span>
-                            <span class="text-xs text-blue-700">Access gallery on any device</span>
-                        </div>
-                    </div>
-                    <button id="cloud-toggle" class="w-12 h-7 bg-gray-300 rounded-full relative transition-colors duration-300">
-                        <div class="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm"></div>
-                    </button>
+            <div class="bg-blue-50 p-4 rounded-3xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-blue-800">Your Gallery Key</span>
+                    <span id="current-key-badge" class="key-badge">------</span>
                 </div>
-                <div id="user-info" class="pt-3 border-t border-blue-200 hidden">
-                    <p class="text-[10px] uppercase font-bold text-blue-500 mb-1">Your Sync ID</p>
-                    <code class="text-xs text-blue-800 bg-white/50 px-2 py-1 rounded block truncate" id="user-id-display">Connecting...</code>
-                </div>
+                <p class="text-xs text-blue-600 opacity-80">Share this key with others to let them view or add to this gallery in real-time.</p>
+                <button id="copy-key" class="w-full py-3 bg-white text-blue-600 rounded-2xl text-sm font-bold shadow-sm active:scale-95 transition-transform">Copy Key</button>
             </div>
 
             <div class="space-y-3">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Capture Quality</p>
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Join a Gallery</p>
                 <div class="flex gap-2">
-                    <button data-res="HD" class="res-toggle flex-1 py-4 rounded-2xl border border-gray-200 text-sm font-medium active-chip transition-all">Full HD</button>
-                    <button data-res="4K" class="res-toggle flex-1 py-4 rounded-2xl border border-gray-200 text-sm font-medium transition-all">4K Ultra</button>
+                    <input type="text" id="join-key-input" placeholder="Enter 6-digit key" maxlength="6" class="flex-grow p-4 rounded-2xl bg-gray-100 border-none text-center font-mono font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="btn-join" class="px-6 bg-blue-600 text-white rounded-2xl font-bold text-sm active:scale-95 transition-all">Join</button>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between py-2 border-y border-gray-100">
+            <div class="flex items-center justify-between py-2 border-t border-gray-100">
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                         <span class="material-symbols-rounded text-gray-600">grid_4x4</span>
                     </div>
-                    <div>
-                        <span class="block font-medium">Composition Grid</span>
-                        <span class="text-xs text-gray-500">Rule of thirds helper</span>
-                    </div>
+                    <span class="font-medium">Camera Grid</span>
                 </div>
-                <button id="grid-toggle" class="w-12 h-7 bg-gray-200 rounded-full relative transition-colors duration-300">
-                    <div class="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm"></div>
+                <button id="grid-toggle" class="w-12 h-7 bg-gray-200 rounded-full relative transition-colors">
+                    <div class="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-all"></div>
                 </button>
             </div>
-
-            <div class="space-y-3">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Self Timer</p>
-                <div class="flex gap-2">
-                    <button data-timer="0" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm active-chip">Off</button>
-                    <button data-timer="3" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">3s</button>
-                    <button data-timer="10" class="timer-btn flex-1 py-3 rounded-2xl border border-gray-200 text-sm">10s</button>
-                </div>
-            </div>
         </div>
     </div>
 
+    <!-- Gallery Sheet -->
     <div id="gallery-sheet" class="bottom-sheet">
-        <div class="drag-handle" onclick="closeSheets()"></div>
-        <div class="px-5 pb-4">
-            <div class="flex justify-between items-center mb-5">
-                <h3 id="gallery-title" class="text-xl font-medium text-gray-900">Gallery</h3>
-                <div class="flex gap-1" id="gallery-actions-default">
-                    <button id="btn-select-mode" class="p-2.5 text-gray-700 rounded-full hover:bg-gray-100">
-                        <span class="material-symbols-rounded">checklist</span>
-                    </button>
-                    <button id="bulk-download" class="p-2.5 text-blue-600 rounded-full hover:bg-blue-50">
-                        <span class="material-symbols-rounded">download_for_offline</span>
-                    </button>
-                </div>
-                <div class="flex items-center gap-2 hidden" id="gallery-actions-selection">
-                    <button id="btn-select-all" class="text-sm font-medium text-blue-600 px-3 py-1.5 rounded-full hover:bg-blue-50">Select All</button>
-                    <div class="h-6 w-px bg-gray-200 mx-1"></div>
-                    <button id="btn-download-selected" class="p-2 text-blue-600 rounded-full hover:bg-blue-50">
-                        <span class="material-symbols-rounded">download</span>
-                    </button>
-                    <button id="btn-delete-selected" class="p-2 text-red-500 rounded-full hover:bg-red-50">
-                        <span class="material-symbols-rounded">delete</span>
-                    </button>
-                    <button id="btn-cancel-selection" class="p-2 text-gray-500 rounded-full hover:bg-gray-100">
-                        <span class="material-symbols-rounded">close</span>
-                    </button>
-                </div>
-            </div>
-
-            <div id="selection-banner" class="hidden mb-4 py-2 px-4 bg-blue-50 text-blue-700 rounded-2xl text-sm font-medium flex justify-between items-center">
-                <span id="selection-count">0 selected</span>
-            </div>
-
-            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button class="filter-chip active-chip" data-filter="all">All media</button>
-                <button class="filter-chip" data-filter="image">Photos</button>
-                <button class="filter-chip" data-filter="video">Videos</button>
-            </div>
+        <div class="w-10 h-1.5 bg-gray-200 rounded-full mx-auto my-3" onclick="closeSheets()"></div>
+        <div class="px-5 pb-4 flex justify-between items-center">
+            <h3 class="text-xl font-medium text-gray-900">Cloud Media</h3>
+            <button id="btn-refresh" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full">
+                <span class="material-symbols-rounded">refresh</span>
+            </button>
         </div>
-
         <div id="gallery-content" class="gallery-grid"></div>
-        <div id="empty-gallery" class="py-24 text-center text-gray-400 hidden">
-            <span class="material-symbols-rounded text-5xl block mb-3 opacity-30">photo_library</span>
-            <p class="font-medium">No media captured yet</p>
+        <div id="empty-gallery" class="py-20 text-center text-gray-400 hidden">
+            <span class="material-symbols-rounded text-5xl opacity-20">cloud_off</span>
+            <p class="mt-2">Gallery is empty</p>
         </div>
     </div>
 
+    <!-- Lightbox -->
     <div id="lightbox">
-        <div class="flex justify-between items-center p-4 text-white z-50 bg-gradient-to-b from-black/80 to-transparent">
-            <button id="lightbox-close" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all">
+        <div class="flex justify-between items-center p-4 text-white z-50">
+            <button onclick="closeLightbox()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10">
                 <span class="material-symbols-rounded">close</span>
             </button>
-            <div id="lightbox-meta" class="text-center">
-                <p class="text-sm font-medium" id="lightbox-date">Jan 01, 2024</p>
-                <p class="text-[10px] opacity-60 uppercase tracking-widest" id="lightbox-time">12:00 PM</p>
+            <div class="text-center">
+                <p id="lb-date" class="text-sm font-medium">--</p>
+                <p id="lb-type" class="text-[10px] opacity-60 uppercase tracking-widest">Media</p>
             </div>
-            <div class="flex gap-2">
-                <button id="lightbox-share" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all">
-                    <span class="material-symbols-rounded">share</span>
-                </button>
-                <button id="lightbox-delete" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-red-400 transition-all">
-                    <span class="material-symbols-rounded">delete</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="flex-grow flex items-center justify-center relative group">
-            <button id="lightbox-prev" class="lightbox-nav-btn left-4 opacity-0 group-hover:opacity-100 transition-all">
-                <span class="material-symbols-rounded text-3xl">chevron_left</span>
-            </button>
-            <div id="lightbox-main" class="w-full h-full flex items-center justify-center"></div>
-            <button id="lightbox-next" class="lightbox-nav-btn right-4 opacity-0 group-hover:opacity-100 transition-all">
-                <span class="material-symbols-rounded text-3xl">chevron_right</span>
+            <button id="lb-delete" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-red-400">
+                <span class="material-symbols-rounded">delete</span>
             </button>
         </div>
-
-        <div id="lightbox-footer" class="p-6 pb-12 flex justify-center bg-gradient-to-t from-black/80 to-transparent z-50">
-            <button id="lightbox-download" class="px-10 py-3.5 bg-white text-black rounded-full font-medium flex items-center gap-2 shadow-xl active:scale-95 transition-transform">
-                <span class="material-symbols-rounded fill-icon">download</span>
-                Save to device
-            </button>
-        </div>
+        <div id="lb-main" class="flex-grow flex items-center justify-center p-4"></div>
     </div>
 
     <canvas id="capture-canvas" class="hidden"></canvas>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, addDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // --- Firebase Config & Setup ---
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'camera-pro-default';
-
-        const DB_NAME = "CameraProDB";
-        const STORE_NAME = "media";
-        let localDB;
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'camera-pro-cloud';
 
         const state = {
             user: null,
+            galleryKey: localStorage.getItem('camera_gallery_key') || null,
             stream: null,
             mode: 'photo',
+            facingMode: 'environment',
             isRecording: false,
-            facingMode: 'environment', 
-            flash: false,
+            items: [],
+            grid: false,
             mediaRecorder: null,
-            chunks: [],
-            settings: { res: 'HD', grid: false, timer: 0, cloudSync: false },
-            timerRunning: false,
-            galleryItems: [],
-            selectionMode: false,
-            selectedIds: new Set(),
-            currentFilter: 'all',
-            lightboxIndex: -1,
-            get currentViewingItems() {
-                return this.galleryItems.filter(i => this.currentFilter === 'all' || i.type === this.currentFilter);
-            }
+            chunks: []
         };
 
         const els = {
@@ -610,70 +352,27 @@
             shutter: document.getElementById('shutter'),
             modePhoto: document.getElementById('btn-photo-mode'),
             modeVideo: document.getElementById('btn-video-mode'),
-            modeSwitcher: document.getElementById('mode-switcher'),
-            flash: document.getElementById('flash-btn'),
-            flip: document.getElementById('flip-btn'),
-            canvas: document.getElementById('capture-canvas'),
-            settingsTrigger: document.getElementById('settings-trigger'),
+            displayKey: document.getElementById('display-key'),
+            currentKeyBadge: document.getElementById('current-key-badge'),
+            joinInput: document.getElementById('join-key-input'),
+            btnJoin: document.getElementById('btn-join'),
             settingsSheet: document.getElementById('settings-sheet'),
-            galleryTrigger: document.getElementById('gallery-trigger'),
             gallerySheet: document.getElementById('gallery-sheet'),
+            galleryContent: document.getElementById('gallery-content'),
+            emptyGallery: document.getElementById('empty-gallery'),
             overlay: document.getElementById('sheet-overlay'),
             grid: document.getElementById('camera-grid'),
             gridToggle: document.getElementById('grid-toggle'),
-            cloudToggle: document.getElementById('cloud-toggle'),
-            timerDisplay: document.getElementById('timer-display'),
             lastThumb: document.getElementById('last-capture-img'),
-            galleryIcon: document.getElementById('gallery-icon'),
-            status: document.getElementById('recording-status'),
-            syncIndicator: document.getElementById('sync-status'),
-            galleryContent: document.getElementById('gallery-content'),
-            emptyGallery: document.getElementById('empty-gallery'),
-            bulkDownload: document.getElementById('bulk-download'),
+            canvas: document.getElementById('capture-canvas'),
             toast: document.getElementById('toast'),
-            userInfo: document.getElementById('user-info'),
-            userIdDisplay: document.getElementById('user-id-display'),
-            btnSelectMode: document.getElementById('btn-select-mode'),
-            btnCancelSelection: document.getElementById('btn-cancel-selection'),
-            btnSelectAll: document.getElementById('btn-select-all'),
-            actionsDefault: document.getElementById('gallery-actions-default'),
-            actionsSelection: document.getElementById('gallery-actions-selection'),
-            selectionBanner: document.getElementById('selection-banner'),
-            selectionCount: document.getElementById('selection-count'),
-            btnDeleteSelected: document.getElementById('btn-delete-selected'),
-            btnDownloadSelected: document.getElementById('btn-download-selected'),
             lightbox: document.getElementById('lightbox'),
-            lightboxMain: document.getElementById('lightbox-main'),
-            lightboxClose: document.getElementById('lightbox-close'),
-            lightboxDate: document.getElementById('lightbox-date'),
-            lightboxTime: document.getElementById('lightbox-time'),
-            lightboxDelete: document.getElementById('lightbox-delete'),
-            lightboxDownload: document.getElementById('lightbox-download'),
-            lightboxShare: document.getElementById('lightbox-share'),
-            lightboxPrev: document.getElementById('lightbox-prev'),
-            lightboxNext: document.getElementById('lightbox-next'),
-            lightboxFooter: document.getElementById('lightbox-footer')
+            lbMain: document.getElementById('lb-main'),
+            flip: document.getElementById('flip-btn') // Fixed: Added missing flip-btn to els
         };
 
-        // --- Database ---
-        const initLocalDB = () => {
-            return new Promise((resolve) => {
-                const request = indexedDB.open(DB_NAME, 2); // Version bump for possible updates
-                request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
-                    }
-                };
-                request.onsuccess = (e) => {
-                    localDB = e.target.result;
-                    resolve();
-                };
-            });
-        };
-
-        // --- Authentication ---
-        const initAuth = async () => {
+        // --- AUTH & CLOUD CORE ---
+        async function initAuth() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -681,198 +380,104 @@
                     await signInAnonymously(auth);
                 }
             } catch (err) {
-                console.error("Auth error:", err);
+                console.error("Auth error", err);
             }
-        };
+        }
 
-        onAuthStateChanged(auth, (user) => {
-            state.user = user;
-            if (user) {
-                els.userIdDisplay.textContent = user.uid;
-                els.userInfo.classList.remove('hidden');
-                syncWithCloud(); // Check for remote updates on login
+        function generateKey() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        async function connectGallery(key) {
+            if (!key) {
+                key = generateKey();
+                localStorage.setItem('camera_gallery_key', key);
             }
-        });
-
-        // --- Cloud Synchronization ---
-        async function syncWithCloud() {
-            if (!state.user || !state.settings.cloudSync) return;
+            state.galleryKey = key;
+            els.displayKey.textContent = key;
+            els.currentKeyBadge.textContent = key;
             
-            els.syncIndicator.classList.remove('hidden');
-            const galleryRef = collection(db, 'artifacts', appId, 'users', state.user.uid, 'gallery');
-            
-            // Listen for changes from other devices (Rule 2: Fetch all, filter in memory)
-            onSnapshot(galleryRef, async (snapshot) => {
-                for (const change of snapshot.docChanges()) {
-                    if (change.type === "added") {
-                        const data = change.doc.data();
-                        await saveToLocalIfNew(data);
-                    }
-                    if (change.type === "removed") {
-                        await deleteFromLocal(change.doc.id);
-                    }
-                }
-                await loadGalleryItems();
+            // Listen for changes
+            const q = collection(db, 'artifacts', appId, 'public', 'data', `gallery_${key}`);
+            onSnapshot(q, (snapshot) => {
+                state.items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => b.timestamp - a.timestamp);
+                renderGallery();
                 updateThumb();
-                els.syncIndicator.classList.add('hidden');
             }, (err) => {
-                console.error("Cloud Sync Error:", err);
-                els.syncIndicator.classList.add('hidden');
+                showToast("Gallery connection failed");
+                console.error(err);
             });
         }
 
-        async function saveToLocalIfNew(data) {
-            // Convert base64 back to blob
-            const response = await fetch(data.base64);
-            const blob = await response.blob();
-            
-            const transaction = localDB.transaction([STORE_NAME], "readwrite");
-            const store = transaction.objectStore(STORE_NAME);
-            
-            // Check if it already exists to avoid duplicates
-            const items = await new Promise(r => {
-                const req = store.getAll();
-                req.onsuccess = () => r(req.result);
-            });
-            
-            if (!items.find(i => i.cloudId === data.id || i.timestamp === data.timestamp)) {
-                store.add({
-                    ...data,
-                    blob: blob,
-                    cloudId: data.id
-                });
-            }
-        }
-
-        async function deleteFromLocal(cloudId) {
-            const transaction = localDB.transaction([STORE_NAME], "readwrite");
-            const store = transaction.objectStore(STORE_NAME);
-            const items = await new Promise(r => {
-                const req = store.getAll();
-                req.onsuccess = () => r(req.result);
-            });
-            const localItem = items.find(i => i.cloudId === cloudId);
-            if (localItem) store.delete(localItem.id);
-        }
-
-        async function uploadToCloud(item, blob) {
-            if (!state.user || !state.settings.cloudSync) return;
-            
-            els.syncIndicator.classList.remove('hidden');
-            try {
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = async () => {
-                    const base64data = reader.result;
-                    // Note: Firestore doc limit is 1MB. For Pro apps, you'd usually use Firebase Storage.
-                    // Here we store as base64 but warn the user if it's too large.
-                    if (base64data.length > 1048576) {
-                        showToast("File too large for cloud sync");
-                        return;
-                    }
-
-                    const docId = `item_${item.timestamp}`;
-                    const docRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'gallery', docId);
-                    
-                    await setDoc(docRef, {
-                        id: docId,
-                        timestamp: item.timestamp,
-                        type: item.type,
-                        filename: item.filename,
-                        base64: base64data
-                    });
-                    
-                    // Mark as synced locally
-                    const transaction = localDB.transaction([STORE_NAME], "readwrite");
-                    const store = transaction.objectStore(STORE_NAME);
-                    const localItem = await new Promise(r => {
-                        const req = store.get(item.id);
-                        req.onsuccess = () => r(req.result);
-                    });
-                    if (localItem) {
-                        localItem.cloudId = docId;
-                        store.put(localItem);
-                    }
-                    els.syncIndicator.classList.add('hidden');
-                };
-            } catch (err) {
-                console.error("Upload error:", err);
-                els.syncIndicator.classList.add('hidden');
-            }
-        }
-
-        // --- Camera Core ---
+        // --- CAMERA LOGIC ---
         async function startCamera() {
-            if (state.stream) {
-                state.stream.getTracks().forEach(t => t.stop());
-            }
-
-            const constraints = {
-                video: {
-                    facingMode: state.facingMode,
-                    width: state.settings.res === '4K' ? { ideal: 3840 } : { ideal: 1920 },
-                    height: state.settings.res === '4K' ? { ideal: 2160 } : { ideal: 1080 }
-                },
-                audio: true
-            };
-
+            if (state.stream) state.stream.getTracks().forEach(t => t.stop());
             try {
-                state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                state.stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: state.facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: true
+                });
                 els.video.srcObject = state.stream;
-                const actualFacing = state.stream.getVideoTracks()[0].getSettings().facingMode;
-                els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
-            } catch (err) {
-                showToast("Camera blocked or unavailable");
+                const track = state.stream.getVideoTracks()[0].getSettings();
+                els.video.style.transform = track.facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+            } catch (e) {
+                showToast("Camera access denied");
             }
+        }
+
+        async function saveMedia(blob, type) {
+            if (!state.galleryKey || !state.user) return;
+            
+            showToast("Syncing to cloud...");
+            
+            // Convert to base64 for Firestore storage (Note: 1MB limit per doc)
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64data = reader.result;
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `gallery_${state.galleryKey}`), {
+                        data: base64data,
+                        type: type,
+                        timestamp: Date.now(),
+                        owner: state.user.uid
+                    });
+                    showToast("Synced!");
+                } catch (e) {
+                    showToast("Sync failed (File too large?)");
+                }
+            };
         }
 
         function takePhoto() {
-            if (!els.video.videoWidth) return;
             els.canvas.width = els.video.videoWidth;
             els.canvas.height = els.video.videoHeight;
             const ctx = els.canvas.getContext('2d');
-            
             if (state.facingMode === 'user') {
                 ctx.translate(els.canvas.width, 0);
                 ctx.scale(-1, 1);
             }
             ctx.drawImage(els.video, 0, 0);
+            els.canvas.toBlob(blob => saveMedia(blob, 'image'), 'image/jpeg', 0.8);
             
-            els.canvas.toBlob(blob => saveToGallery(blob, 'image'), 'image/jpeg', 0.85); // Slightly compressed for sync
-            els.video.style.filter = 'brightness(2) contrast(0.8)';
+            // Flash effect
+            els.video.style.filter = 'brightness(2)';
             setTimeout(() => els.video.style.filter = '', 100);
         }
 
-        let recordInterval, startTime;
         function toggleRecording() {
             if (!state.isRecording) {
                 state.chunks = [];
-                let mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm;codecs=vp9,opus';
-                
-                state.mediaRecorder = new MediaRecorder(state.stream, { mimeType });
+                state.mediaRecorder = new MediaRecorder(state.stream);
                 state.mediaRecorder.ondataavailable = e => state.chunks.push(e.data);
                 state.mediaRecorder.onstop = () => {
-                    const blob = new Blob(state.chunks, { type: state.mediaRecorder.mimeType });
-                    saveToGallery(blob, 'video');
-                    clearInterval(recordInterval);
-                    els.status.textContent = "Camera Pro";
-                    els.status.classList.remove('text-red-600');
-                    setRecordingLock(false);
+                    const blob = new Blob(state.chunks, { type: 'video/webm' });
+                    saveMedia(blob, 'video');
                 };
-
                 state.mediaRecorder.start();
                 state.isRecording = true;
-                setRecordingLock(true);
                 els.shutter.classList.add('recording');
-                els.status.classList.add('text-red-600');
-                
-                startTime = Date.now();
-                recordInterval = setInterval(() => {
-                    const diff = Math.floor((Date.now() - startTime) / 1000);
-                    const m = Math.floor(diff/60).toString().padStart(2, '0');
-                    const s = (diff%60).toString().padStart(2, '0');
-                    els.status.textContent = `REC • ${m}:${s}`;
-                }, 1000);
             } else {
                 state.mediaRecorder.stop();
                 state.isRecording = false;
@@ -880,306 +485,82 @@
             }
         }
 
-        // --- Gallery Engine ---
-        async function saveToGallery(blob, type) {
-            const transaction = localDB.transaction([STORE_NAME], "readwrite");
-            const store = transaction.objectStore(STORE_NAME);
-            const item = {
-                blob: blob,
-                type: type,
-                timestamp: Date.now(),
-                filename: `${type === 'image' ? 'IMG' : 'VID'}_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`
-            };
-            const request = store.add(item);
-            
-            request.onsuccess = async (e) => {
-                const insertedId = e.target.result;
-                item.id = insertedId;
-                await loadGalleryItems();
-                updateThumb();
-                showToast(type === 'image' ? "Photo saved" : "Video saved");
-                
-                // Trigger cloud sync
-                if (state.settings.cloudSync) {
-                    uploadToCloud(item, blob);
-                }
-            };
-        }
-
-        async function loadGalleryItems() {
-            return new Promise(resolve => {
-                const transaction = localDB.transaction([STORE_NAME], "readonly");
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-                request.onsuccess = () => {
-                    state.galleryItems = request.result.sort((a,b) => b.timestamp - a.timestamp);
-                    resolve(state.galleryItems);
-                };
-            });
-        }
-
+        // --- UI HELPERS ---
         function renderGallery() {
             els.galleryContent.innerHTML = '';
-            const filtered = state.galleryItems.filter(i => state.currentFilter === 'all' || i.type === state.currentFilter);
-            
-            if (filtered.length === 0) {
+            if (state.items.length === 0) {
                 els.emptyGallery.classList.remove('hidden');
-            } else {
-                els.emptyGallery.classList.add('hidden');
-                filtered.forEach((item, index) => {
-                    const div = document.createElement('div');
-                    div.className = `gallery-item ${state.selectedIds.has(item.id) ? 'selected' : ''}`;
-                    const url = URL.createObjectURL(item.blob);
-                    
-                    if (item.type === 'image') {
-                        div.innerHTML = `
-                            <div class="select-check"><span class="material-symbols-rounded" style="font-size:16px; font-weight:700;">check</span></div>
-                            <img src="${url}" loading="lazy">
-                        `;
-                    } else {
-                        div.innerHTML = `
-                            <div class="select-check"><span class="material-symbols-rounded" style="font-size:16px; font-weight:700;">check</span></div>
-                            <video src="${url}#t=0.5"></video>
-                            <div class="video-thumb-overlay">
-                                <div class="video-thumb-play"><span class="material-symbols-rounded fill-icon">play_arrow</span></div>
-                            </div>
-                            <div class="video-badge"><span class="material-symbols-rounded" style="font-size:12px;">videocam</span>VIDEO</div>
-                        `;
-                    }
-
-                    div.onclick = () => {
-                        if (state.selectionMode) {
-                            if (state.selectedIds.has(item.id)) state.selectedIds.delete(item.id);
-                            else state.selectedIds.add(item.id);
-                            updateSelectionUI();
-                            renderGallery();
-                        } else {
-                            openLightbox(index);
-                        }
-                    };
-                    els.galleryContent.appendChild(div);
-                });
+                return;
             }
-        }
+            els.emptyGallery.classList.add('hidden');
 
-        // --- Lightbox Functions ---
-        function openLightbox(index) {
-            state.lightboxIndex = index;
-            els.lightbox.classList.add('active');
-            updateLightboxContent();
-        }
-
-        function updateLightboxContent() {
-            const items = state.currentViewingItems;
-            const item = items[state.lightboxIndex];
-            if (!item) return;
-
-            els.lightboxMain.innerHTML = '';
-            const url = URL.createObjectURL(item.blob);
-            
-            if (item.type === 'image') {
-                els.lightboxFooter.style.display = 'flex';
-                const img = document.createElement('img');
-                img.src = url;
-                img.className = 'max-w-full max-h-full object-contain animate-in fade-in zoom-in-95 duration-300';
-                els.lightboxMain.appendChild(img);
-            } else {
-                els.lightboxFooter.style.display = 'none';
-                initCustomVideoPlayer(url);
-            }
-
-            const d = new Date(item.timestamp);
-            els.lightboxDate.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-            els.lightboxTime.textContent = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-
-            els.lightboxPrev.style.display = state.lightboxIndex > 0 ? 'flex' : 'none';
-            els.lightboxNext.style.display = state.lightboxIndex < items.length - 1 ? 'flex' : 'none';
-        }
-
-        function initCustomVideoPlayer(src) {
-            const container = document.createElement('div');
-            container.className = 'video-player-container';
-            container.innerHTML = `
-                <video id="lb-video" src="${src}" class="max-w-full max-h-full"></video>
-                <div class="play-pause-center" id="lb-center-icon">
-                    <span class="material-symbols-rounded text-5xl fill-icon">play_arrow</span>
-                </div>
-                <div class="custom-controls" id="lb-controls">
-                    <div class="video-progress-bar" id="lb-progress-bar">
-                        <div class="video-progress-fill" id="lb-progress-fill"></div>
-                    </div>
-                    <div class="flex items-center justify-between text-white">
-                        <div class="flex items-center gap-4">
-                            <button id="lb-play-btn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10">
-                                <span class="material-symbols-rounded fill-icon">play_arrow</span>
-                            </button>
-                            <span class="text-xs font-medium" id="lb-time">00:00 / 00:00</span>
+            state.items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                if (item.type === 'image') {
+                    div.innerHTML = `<img src="${item.data}" loading="lazy">`;
+                } else {
+                    div.innerHTML = `
+                        <video src="${item.data}#t=0.1"></video>
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <span class="material-symbols-rounded text-white fill-icon">play_arrow</span>
                         </div>
-                        <button id="lb-save" class="w-10 h-10 flex items-center justify-center rounded-full bg-white text-black">
-                            <span class="material-symbols-rounded fill-icon">download</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-            els.lightboxMain.appendChild(container);
-            const v = container.querySelector('#lb-video');
-            const playBtn = container.querySelector('#lb-play-btn');
-            const progressFill = container.querySelector('#lb-progress-fill');
-            const saveBtn = container.querySelector('#lb-save');
-
-            v.ontimeupdate = () => {
-                const pct = (v.currentTime / v.duration) * 100;
-                progressFill.style.width = `${pct}%`;
-            };
-            playBtn.onclick = () => v.paused ? v.play() : v.pause();
-            saveBtn.onclick = () => downloadItems([state.currentViewingItems[state.lightboxIndex]]);
-        }
-
-        function navigateLightbox(dir) {
-            const items = state.currentViewingItems;
-            const newIndex = state.lightboxIndex + dir;
-            if (newIndex >= 0 && newIndex < items.length) {
-                state.lightboxIndex = newIndex;
-                updateLightboxContent();
-            }
-        }
-
-        function closeLightbox() {
-            els.lightbox.classList.remove('active');
-            els.lightboxMain.innerHTML = '';
-            state.lightboxIndex = -1;
-        }
-
-        // --- Selection Logic ---
-        function toggleSelectionMode(active) {
-            state.selectionMode = active;
-            state.selectedIds.clear();
-            els.actionsDefault.classList.toggle('hidden', active);
-            els.actionsSelection.classList.toggle('hidden', !active);
-            els.selectionBanner.classList.toggle('hidden', !active);
-            updateSelectionUI();
-            renderGallery();
-        }
-
-        function updateSelectionUI() {
-            els.selectionCount.textContent = `${state.selectedIds.size} selected`;
-        }
-
-        async function deleteItems(ids) {
-            const transaction = localDB.transaction([STORE_NAME], "readwrite");
-            const store = transaction.objectStore(STORE_NAME);
-            
-            for(const id of ids) {
-                const item = await new Promise(r => {
-                    const req = store.get(id);
-                    req.onsuccess = () => r(req.result);
-                });
-                
-                if (item?.cloudId && state.user) {
-                    const docRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'gallery', item.cloudId);
-                    await deleteDoc(docRef);
+                    `;
                 }
-                store.delete(id);
-            }
-            
-            transaction.oncomplete = async () => {
-                await loadGalleryItems();
-                renderGallery();
-                updateThumb();
-                showToast(`${ids.length} items deleted`);
-            };
-        }
-
-        async function downloadItems(items) {
-            if (items.length === 1) {
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(items[0].blob);
-                a.download = items[0].filename;
-                a.click();
-            } else {
-                showToast("Generating ZIP...");
-                const zip = new JSZip();
-                items.forEach(item => zip.file(item.filename, item.blob));
-                const content = await zip.generateAsync({ type: "blob" });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(content);
-                a.download = `CameraPro_Batch_${Date.now()}.zip`;
-                a.click();
-            }
-        }
-
-        // --- Helpers ---
-        function showToast(msg) {
-            els.toast.textContent = msg;
-            els.toast.style.opacity = '1';
-            els.toast.style.transform = 'translateX(-50%) translateY(-10px)';
-            setTimeout(() => {
-                els.toast.style.opacity = '0';
-                els.toast.style.transform = 'translateX(-50%) translateY(0)';
-            }, 2500);
-        }
-
-        function setRecordingLock(locked) {
-            [els.flip, els.modeSwitcher, els.settingsTrigger, els.galleryTrigger].forEach(el => {
-                el.style.pointerEvents = locked ? 'none' : 'auto';
-                el.style.opacity = locked ? '0.3' : '1';
+                div.onclick = () => openLightbox(item);
+                els.galleryContent.appendChild(div);
             });
         }
 
-        function closeSheets() {
+        function updateThumb() {
+            if (state.items.length > 0) {
+                els.lastThumb.src = state.items[0].data;
+                els.lastThumb.classList.remove('hidden');
+            } else {
+                els.lastThumb.classList.add('hidden');
+            }
+        }
+
+        function openLightbox(item) {
+            els.lbMain.innerHTML = '';
+            if (item.type === 'image') {
+                els.lbMain.innerHTML = `<img src="${item.data}" class="max-w-full max-h-full object-contain">`;
+            } else {
+                els.lbMain.innerHTML = `<video src="${item.data}" controls autoplay class="max-w-full max-h-full"></video>`;
+            }
+            document.getElementById('lb-date').textContent = new Date(item.timestamp).toLocaleTimeString();
+            document.getElementById('lb-type').textContent = item.type;
+            
+            document.getElementById('lb-delete').onclick = async () => {
+                if (confirm("Delete this from cloud?")) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `gallery_${state.galleryKey}`, item.id));
+                    closeLightbox();
+                }
+            };
+
+            els.lightbox.classList.add('active');
+        }
+
+        window.closeLightbox = () => els.lightbox.classList.remove('active');
+        window.closeSheets = () => {
             els.settingsSheet.classList.remove('active');
             els.gallerySheet.classList.remove('active');
             els.overlay.classList.remove('active');
-            toggleSelectionMode(false);
+        };
+
+        function showToast(m) {
+            els.toast.textContent = m;
+            els.toast.style.opacity = '1';
+            setTimeout(() => els.toast.style.opacity = '0', 2000);
         }
 
-        async function updateThumb() {
-            if (state.galleryItems.length > 0) {
-                const last = state.galleryItems[0];
-                els.lastThumb.src = URL.createObjectURL(last.blob);
-                els.lastThumb.classList.remove('hidden');
-                els.galleryIcon.classList.add('hidden');
-            } else {
-                els.lastThumb.classList.add('hidden');
-                els.galleryIcon.classList.remove('hidden');
-            }
-        }
-
-        // --- Event Listeners ---
-        els.shutter.onclick = () => {
-            if (state.timerRunning) return;
-            if (state.settings.timer > 0 && !state.isRecording) {
-                state.timerRunning = true;
-                let count = state.settings.timer;
-                els.timerDisplay.classList.remove('hidden');
-                els.timerDisplay.textContent = count;
-                const itv = setInterval(() => {
-                    count--;
-                    if (count <= 0) {
-                        clearInterval(itv);
-                        els.timerDisplay.classList.add('hidden');
-                        state.timerRunning = false;
-                        state.mode === 'photo' ? takePhoto() : toggleRecording();
-                    } else els.timerDisplay.textContent = count;
-                }, 1000);
-            } else {
-                state.mode === 'photo' ? takePhoto() : toggleRecording();
-            }
+        // --- EVENT HANDLERS ---
+        els.shutter.onclick = () => state.mode === 'photo' ? takePhoto() : toggleRecording();
+        
+        els.flip.onclick = () => {
+            state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+            startCamera();
         };
-
-        els.galleryTrigger.onclick = async () => {
-            await loadGalleryItems();
-            renderGallery();
-            els.gallerySheet.classList.add('active');
-            els.overlay.classList.add('active');
-        };
-
-        els.settingsTrigger.onclick = () => {
-            els.settingsSheet.classList.add('active');
-            els.overlay.classList.add('active');
-        };
-
-        els.overlay.onclick = closeSheets;
 
         els.modePhoto.onclick = () => {
             state.mode = 'photo';
@@ -1195,56 +576,56 @@
             document.body.classList.add('mode-video');
         };
 
-        els.flip.onclick = () => {
-            state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
-            startCamera();
+        document.getElementById('settings-trigger').onclick = () => {
+            els.settingsSheet.classList.add('active');
+            els.overlay.classList.add('active');
         };
 
-        els.cloudToggle.onclick = () => {
-            state.settings.cloudSync = !state.settings.cloudSync;
-            els.cloudToggle.classList.toggle('bg-blue-600', state.settings.cloudSync);
-            els.cloudToggle.querySelector('.dot').style.transform = state.settings.cloudSync ? 'translateX(20px)' : 'translateX(0)';
-            if (state.settings.cloudSync) syncWithCloud();
+        document.getElementById('gallery-trigger').onclick = () => {
+            els.gallerySheet.classList.add('active');
+            els.overlay.classList.add('active');
         };
 
-        els.btnSelectMode.onclick = () => toggleSelectionMode(true);
-        els.btnCancelSelection.onclick = () => toggleSelectionMode(false);
-        els.btnDeleteSelected.onclick = () => {
-            if (state.selectedIds.size === 0) return;
-            deleteItems([...state.selectedIds]);
-            toggleSelectionMode(false);
-        };
-        els.btnDownloadSelected.onclick = () => {
-            const items = state.galleryItems.filter(i => state.selectedIds.has(i.id));
-            if (items.length > 0) downloadItems(items);
-        };
+        els.overlay.onclick = closeSheets;
 
-        els.lightboxClose.onclick = closeLightbox;
-        els.lightboxPrev.onclick = () => navigateLightbox(-1);
-        els.lightboxNext.onclick = () => navigateLightbox(1);
-        els.lightboxDelete.onclick = () => {
-            const item = state.currentViewingItems[state.lightboxIndex];
-            if (item) {
-                deleteItems([item.id]);
-                closeLightbox();
+        els.btnJoin.onclick = () => {
+            const key = els.joinInput.value.trim().toUpperCase();
+            if (key.length === 6) {
+                localStorage.setItem('camera_gallery_key', key);
+                location.reload();
+            } else {
+                showToast("Enter a 6-character key");
             }
         };
 
-        document.querySelectorAll('.filter-chip').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active-chip'));
-                btn.classList.add('active-chip');
-                state.currentFilter = btn.dataset.filter;
-                renderGallery();
-            };
+        document.getElementById('copy-key').onclick = () => {
+            const el = document.createElement('textarea');
+            el.value = state.galleryKey;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            showToast("Key copied to clipboard!");
+        };
+
+        els.gridToggle.onclick = () => {
+            state.grid = !state.grid;
+            els.grid.style.opacity = state.grid ? '1' : '0';
+            els.gridToggle.classList.toggle('bg-blue-600', state.grid);
+            els.gridToggle.querySelector('.dot').style.transform = state.grid ? 'translateX(20px)' : 'translateX(0)';
+        };
+
+        // --- INIT ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                state.user = user;
+                connectGallery(state.galleryKey);
+            }
         });
 
         window.onload = async () => {
-            await initLocalDB();
             await initAuth();
-            await startCamera();
-            await loadGalleryItems();
-            updateThumb();
+            startCamera();
         };
     </script>
 </body>
