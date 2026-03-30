@@ -37,47 +37,65 @@
     </script>
     <style>
         body { background-color: #f8f9fc; color: #1f1f1f; overflow: hidden; font-family: 'Roboto', 'Google Sans', sans-serif; }
-        header { display: grid; grid-template-columns: 80px 1fr 80px; align-items: center; height: 64px; }
+        
+        /* M3 Centered Header Grid */
+        header { display: grid; grid-template-columns: 64px 1fr 64px; align-items: center; height: 64px; }
+        
+        /* Perfect Circular Buttons */
         .btn-circle-m3 { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; transition: background-color 0.2s; flex-shrink: 0; margin: 0 auto; }
         .btn-circle-m3:hover { background-color: rgba(0, 0, 0, 0.08); }
+        .btn-circle-m3:active { background-color: rgba(0, 0, 0, 0.12); }
+
         .nav-item { border-radius: 9999px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); margin: 0 12px; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; }
         .nav-item.active { background-color: #d3e3fd; color: #041e49; font-weight: 500; }
         .nav-item.active span { font-variation-settings: 'FILL' 1; }
+
         .fab-m3 { position: fixed; bottom: 24px; right: 24px; height: 64px; padding: 0 24px; background-color: #ffffff; color: #0b57d0; border-radius: 16px; box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; z-index: 100; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .fab-m3:hover { box-shadow: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3); background-color: #f8faff; }
+        
         .m3-dialog-overlay { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        
         #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (max-width: 768px) { #sidebar.hidden-mobile { transform: translateX(-100%); } }
+        
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #c4c7c5; border-radius: 10px; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <!-- Standalone Setup Screen (Hidden if config exists) -->
+    <!-- Standalone Setup Screen -->
     <div id="setup-screen" class="fixed inset-0 z-[1000] bg-m3-surface hidden flex items-center justify-center p-6">
         <div class="bg-white rounded-[28px] w-full max-w-lg p-8 shadow-xl border border-gray-100">
             <span class="material-symbols-outlined text-m3-primary text-5xl mb-4">settings_suggest</span>
             <h1 class="text-2xl font-medium google-sans mb-2">Drive Setup</h1>
-            <p class="text-gray-600 text-sm mb-6">To host this drive yourself, paste your Firebase Configuration object below. You can find this in your Firebase Project Settings.</p>
-            <textarea id="setup-config-input" class="w-full h-40 bg-m3-surface-container rounded-2xl p-4 font-mono text-xs outline-none border-2 border-transparent focus:border-m3-primary transition-all mb-4" placeholder='const firebaseConfig = { ... };'></textarea>
+            <p class="text-gray-600 text-sm mb-6 leading-relaxed">This drive is designed to be hosted anywhere. To begin, paste your <b>Firebase Config</b> object below. You can find this in your Firebase Console under Project Settings.</p>
+            <textarea id="setup-config-input" class="w-full h-40 bg-m3-surface-container rounded-2xl p-4 font-mono text-xs outline-none border-2 border-transparent focus:border-m3-primary transition-all mb-4" placeholder='const firebaseConfig = {
+    apiKey: "...",
+    authDomain: "...",
+    ...
+};'></textarea>
             <button onclick="saveStandaloneConfig()" class="w-full bg-m3-primary text-white py-4 rounded-full font-medium hover:shadow-lg transition-all active:scale-95">Initialize Drive</button>
-            <p class="text-[10px] text-gray-400 mt-4 text-center">Config is stored locally in your browser.</p>
+            <p class="text-[10px] text-gray-400 mt-4 text-center italic">Settings are saved securely in your browser's local storage.</p>
         </div>
     </div>
 
     <!-- M3 Header -->
     <header class="px-2 shrink-0 bg-m3-surface z-50">
-        <button onclick="toggleSidebar()" class="btn-circle-m3"><span class="material-symbols-outlined">menu</span></button>
+        <button onclick="toggleSidebar()" class="btn-circle-m3">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
         <div class="flex justify-center w-full max-w-4xl mx-auto">
             <div class="flex items-center bg-[#edf2fc] h-12 w-full px-4 rounded-full focus-within:bg-white focus-within:shadow-sm transition-all group">
                 <span class="material-symbols-outlined text-gray-500 mr-3">search</span>
                 <input type="text" id="search-input" placeholder="Search in Drive" class="bg-transparent w-full outline-none text-sm font-medium">
             </div>
         </div>
-        <button onclick="openSettings()" class="btn-circle-m3 text-gray-600"><span class="material-symbols-outlined">settings</span></button>
+        <button onclick="openSettings()" class="btn-circle-m3 text-gray-600">
+            <span class="material-symbols-outlined">settings</span>
+        </button>
     </header>
 
     <div class="flex flex-1 overflow-hidden relative">
@@ -102,7 +120,7 @@
         <main class="flex-1 bg-white mx-0 md:mr-4 md:mb-4 rounded-none md:rounded-[32px] border border-gray-200 overflow-hidden flex flex-col">
             <div class="px-8 py-6 flex items-center justify-between border-b border-gray-50">
                 <h1 id="view-title" class="text-2xl font-normal text-gray-900 capitalize">Home</h1>
-                <div id="trash-actions" class="hidden"><button onclick="emptyTrash()" class="text-sm font-medium text-red-600 px-6 py-2 rounded-full border border-red-100 hover:bg-red-50">Empty Trash</button></div>
+                <div id="trash-actions" class="hidden"><button onclick="emptyTrash()" class="text-sm font-medium text-m3-error px-6 py-2 rounded-full border border-red-100 hover:bg-red-50 transition-colors">Empty Trash</button></div>
             </div>
             <div id="scroll-container" class="flex-1 overflow-y-auto p-8 pt-6">
                 <div id="files-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
@@ -110,7 +128,10 @@
         </main>
     </div>
 
-    <button id="upload-btn" class="fab-m3"><span class="material-symbols-outlined" style="font-variation-settings: 'wght' 500;">add</span><span class="text-sm font-medium">New</span></button>
+    <button id="upload-btn" class="fab-m3">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'wght' 500;">add</span>
+        <span class="text-sm font-medium">New</span>
+    </button>
 
     <!-- M3 Settings Modal -->
     <div id="settings-modal" class="m3-dialog-overlay fixed inset-0 hidden z-[200] flex items-center justify-center p-4">
@@ -129,13 +150,18 @@
                     </div>
                 </section>
                 <section class="pt-6 border-t border-gray-100 flex justify-center">
-                    <button onclick="resetToLocal()" class="text-m3-error text-sm font-medium flex items-center gap-2 hover:bg-red-50 px-4 py-2 rounded-full transition-colors"><span class="material-symbols-outlined text-[20px]">restart_alt</span>Reset to Local</button>
+                    <button onclick="resetToLocal()" class="text-m3-error text-sm font-medium flex items-center gap-2 hover:bg-red-50 px-4 py-2 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-[20px]">restart_alt</span>Reset Drive
+                    </button>
+                </section>
+                <section class="pt-2 text-center">
+                    <button onclick="clearSystemConfig()" class="text-gray-400 text-[10px] uppercase font-bold tracking-widest hover:text-m3-error">Wipe System Config</button>
                 </section>
             </div>
         </div>
     </div>
 
-    <!-- M3 Image Viewer -->
+    <!-- Image Viewer Overlay -->
     <div id="preview-overlay" class="fixed inset-0 hidden z-[300] flex flex-col items-center justify-center p-4 bg-black/95 transition-opacity duration-300">
         <div class="absolute top-0 left-0 right-0 h-16 flex items-center justify-between px-6 bg-gradient-to-b from-black/80 to-transparent">
             <div class="flex items-center gap-4 text-white">
@@ -157,49 +183,61 @@
         <span id="toast-msg" class="text-sm font-medium">Processing...</span>
     </div>
 
+    <!-- Standalone Ready Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, addDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // STANDALONE CONFIG LOGIC
-        function getFirebaseConfig() {
-            // Priority 1: Environment variable
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                return JSON.parse(__firebase_config);
-            }
-            // Priority 2: LocalStorage
-            const saved = localStorage.getItem('standalone_firebase_config');
-            if (saved) return JSON.parse(saved);
-            return null;
+        // GATED CONFIG DETECTION
+        function getSafeConfig() {
+            // Check for environmental config first (Preview mode)
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    return typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
+                }
+            } catch(e) {}
+
+            // Check for saved local config (Standalone mode)
+            const local = localStorage.getItem('standalone_firebase_config');
+            return local ? JSON.parse(local) : null;
         }
 
-        const config = getFirebaseConfig();
-        if (!config) {
+        const activeConfig = getSafeConfig();
+
+        if (!activeConfig) {
             document.getElementById('setup-screen').classList.remove('hidden');
         } else {
-            initAppWithConfig(config);
+            startDriveApp(activeConfig);
         }
 
+        // Setup Function
         window.saveStandaloneConfig = () => {
             const val = document.getElementById('setup-config-input').value;
             try {
-                // Regex to find the object inside a potential JS snippet
-                const match = val.match(/\{[\s\S]*\}/);
-                if (!match) throw new Error("Invalid format");
-                const objStr = match[0];
-                // Use Function constructor to safely evaluate a JS object string
-                const obj = new Function(`return ${objStr}`)();
-                if (!obj.apiKey || !obj.projectId) throw new Error("Missing key fields");
+                // Handle raw objects or JS snippets
+                const cleaned = val.includes('firebaseConfig') ? val.match(/\{[\s\S]*\}/)[0] : val;
+                const obj = new Function(`return ${cleaned}`)();
+                if (!obj.apiKey || !obj.projectId) throw "Invalid Config";
                 localStorage.setItem('standalone_firebase_config', JSON.stringify(obj));
                 location.reload();
-            } catch (e) {
-                alert("Error parsing config. Make sure you copy the entire firebaseConfig object correctly.");
+            } catch(e) {
+                alert("Invalid Firebase configuration format. Please copy the entire object correctly.");
             }
         };
 
-        function initAppWithConfig(firebaseConfig) {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'standalone-drive';
+        window.clearSystemConfig = () => {
+            if(confirm("Wipe saved system config? You will need to paste your Firebase config again.")) {
+                localStorage.removeItem('standalone_firebase_config');
+                location.reload();
+            }
+        };
+
+        function startDriveApp(firebaseConfig) {
+            // Safety wrapper for ID and Tokens
+            const safeAppId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'standalone-drive';
+            const safeToken = (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) ? __initial_auth_token : null;
+
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
@@ -211,13 +249,15 @@
             let searchQuery = '';
             let activePreviewId = null;
 
-            // Auth
-            const initAuth = async () => {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+            // Authentication
+            const runAuth = async () => {
+                try {
+                    if (safeToken) {
+                        await signInWithCustomToken(auth, safeToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch(e) { console.error("Auth Fail:", e); }
             };
 
             onAuthStateChanged(auth, (u) => {
@@ -225,17 +265,17 @@
                     user = u;
                     if (!activeUid) activeUid = u.uid;
                     document.getElementById('display-id').textContent = activeUid;
-                    subscribeToFiles();
+                    subscribeData();
                 } else {
-                    initAuth();
+                    runAuth();
                 }
             });
 
-            function subscribeToFiles() {
-                const colRef = collection(db, 'artifacts', appId, 'users', activeUid, 'files');
-                onSnapshot(colRef, (snapshot) => {
-                    allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    render();
+            function subscribeData() {
+                const colRef = collection(db, 'artifacts', safeAppId, 'users', activeUid, 'files');
+                onSnapshot(colRef, (snap) => {
+                    allFiles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    renderGrid();
                     if (activePreviewId) {
                         const updated = allFiles.find(f => f.id === activePreviewId);
                         if (updated) updatePreviewUI(updated);
@@ -243,35 +283,35 @@
                     }
                 }, (err) => {
                     if (err.code === 'permission-denied') {
-                        showToast("Access Denied", true);
+                        showToast("Access Expired", true);
                         setTimeout(resetToLocal, 2000);
                     }
                 });
             }
 
-            async function compressImage(dataUrl, maxWidth = 1200, quality = 0.6) {
+            async function compressImg(url, max = 1200, qual = 0.6) {
                 return new Promise((resolve) => {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        let width = img.width; let height = img.height;
-                        if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
-                        canvas.width = width; canvas.height = height;
+                        let w = img.width; let h = img.height;
+                        if (w > max) { h = (max / w) * h; w = max; }
+                        canvas.width = w; canvas.height = h;
                         const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const result = canvas.toDataURL('image/jpeg', quality);
-                        if (result.length > 1000000) resolve(compressImage(dataUrl, maxWidth * 0.8, quality * 0.8));
-                        else resolve(result);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const res = canvas.toDataURL('image/jpeg', qual);
+                        if (res.length > 1000000) resolve(compressImg(url, max * 0.8, qual * 0.8));
+                        else resolve(res);
                     };
-                    img.src = dataUrl;
+                    img.src = url;
                 });
             }
 
-            function render() {
+            function renderGrid() {
                 const grid = document.getElementById('files-grid');
                 let filtered = allFiles.filter(f => {
-                    const matchesSearch = (f.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-                    if (!matchesSearch) return false;
+                    const matches = (f.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+                    if (!matches) return false;
                     switch(currentView) {
                         case 'trash': return f.trashed === true;
                         case 'starred': return f.starred === true && !f.trashed;
@@ -279,11 +319,11 @@
                     }
                 });
 
-                if (currentView === 'recent' || currentView === 'home') filtered.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                else filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+                if (currentView === 'recent' || currentView === 'home') filtered.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                else filtered.sort((a,b) => (a.name || "").localeCompare(b.name || ""));
 
                 if (filtered.length === 0) {
-                    grid.innerHTML = `<div class="col-span-full py-40 flex flex-col items-center justify-center text-gray-400"><span class="material-symbols-outlined text-8xl mb-4 opacity-30">cloud_off</span><p class="google-sans text-xl">Empty</p></div>`;
+                    grid.innerHTML = `<div class="col-span-full py-40 flex flex-col items-center justify-center text-gray-400 opacity-40"><span class="material-symbols-outlined text-8xl mb-4">cloud_off</span><p class="google-sans text-xl">Empty Drive</p></div>`;
                     return;
                 }
 
@@ -302,53 +342,53 @@
             }
 
             window.openPreviewById = (id) => {
-                const file = allFiles.find(f => f.id === id);
-                if (!file) return;
+                const f = allFiles.find(x => x.id === id);
+                if (!f) return;
                 activePreviewId = id;
-                updatePreviewUI(file);
+                updatePreviewUI(f);
                 document.getElementById('preview-overlay').classList.remove('hidden');
             };
 
-            function updatePreviewUI(file) {
-                document.getElementById('preview-img').src = file.url;
-                document.getElementById('preview-name').textContent = file.name;
-                document.getElementById('preview-download-link').href = file.url;
-                const starIcon = document.getElementById('preview-star-icon');
-                starIcon.textContent = file.starred ? 'star' : 'star_border';
-                starIcon.style.fontVariationSettings = `'FILL' ${file.starred ? 1 : 0}`;
-                document.getElementById('preview-star-btn').onclick = () => window.toggleStar(file.id, !file.starred);
-                document.getElementById('preview-delete-btn').onclick = () => { if (confirm("Move to Trash?")) { window.toggleTrash(file.id, true); closePreview(); } };
+            function updatePreviewUI(f) {
+                document.getElementById('preview-img').src = f.url;
+                document.getElementById('preview-name').textContent = f.name;
+                document.getElementById('preview-download-link').href = f.url;
+                const star = document.getElementById('preview-star-icon');
+                star.textContent = f.starred ? 'star' : 'star_border';
+                star.style.fontVariationSettings = `'FILL' ${f.starred ? 1 : 0}`;
+                document.getElementById('preview-star-btn').onclick = () => window.toggleStar(f.id, !f.starred);
+                document.getElementById('preview-delete-btn').onclick = () => { if(confirm("Move to Trash?")) { window.toggleTrash(f.id, true); closePreview(); } };
             }
 
             window.closePreview = () => { document.getElementById('preview-overlay').classList.add('hidden'); activePreviewId = null; };
 
-            const trigger = document.getElementById('upload-btn');
-            const input = document.getElementById('file-input');
-            trigger.onclick = () => input.click();
-            input.onchange = (e) => {
+            const trig = document.getElementById('upload-btn');
+            const fileIn = document.getElementById('file-input');
+            trig.onclick = () => fileIn.click();
+            fileIn.onchange = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 showToast(`Uploading ${file.name}...`);
                 const reader = new FileReader();
                 reader.onload = async (ev) => {
                     try {
-                        const compressedUrl = await compressImage(ev.target.result);
-                        await addDoc(collection(db, 'artifacts', appId, 'users', activeUid, 'files'), {
-                            name: file.name, url: compressedUrl, starred: false, trashed: false, timestamp: serverTimestamp()
+                        const comp = await compressImg(ev.target.result);
+                        await addDoc(collection(db, 'artifacts', safeAppId, 'users', activeUid, 'files'), {
+                            name: file.name, url: comp, starred: false, trashed: false, timestamp: serverTimestamp()
                         });
                         hideToast();
-                    } catch (err) { showToast("Upload Failed", true); setTimeout(hideToast, 2000); }
+                    } catch(err) { showToast("Upload failed", true); setTimeout(hideToast, 2000); }
                 };
                 reader.readAsDataURL(file);
-                input.value = '';
+                fileIn.value = '';
             };
 
-            window.toggleStar = async (id, state) => await updateDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', id), { starred: state });
-            window.toggleTrash = async (id, state) => await updateDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', id), { trashed: state });
+            window.toggleStar = async (id, s) => await updateDoc(doc(db, 'artifacts', safeAppId, 'users', activeUid, 'files', id), { starred: s });
+            window.toggleTrash = async (id, s) => await updateDoc(doc(db, 'artifacts', safeAppId, 'users', activeUid, 'files', id), { trashed: s });
             window.emptyTrash = async () => {
                 if (!confirm("Permanently delete everything?")) return;
                 const trashed = allFiles.filter(f => f.trashed);
-                for (const f of trashed) await deleteDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', f.id));
+                for (const f of trashed) await deleteDoc(doc(db, 'artifacts', safeAppId, 'users', activeUid, 'files', f.id));
             };
 
             document.querySelectorAll('#main-nav button').forEach(btn => {
@@ -358,12 +398,12 @@
                     currentView = btn.dataset.view;
                     document.getElementById('view-title').textContent = currentView.replace('-', ' ');
                     document.getElementById('trash-actions').classList.toggle('hidden', currentView !== 'trash');
-                    render();
+                    renderGrid();
                     if (window.innerWidth < 768) toggleSidebar();
                 };
             });
 
-            document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; render(); };
+            document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; renderGrid(); };
             window.openSettings = () => document.getElementById('settings-modal').classList.remove('hidden');
             window.closeSettings = () => document.getElementById('settings-modal').classList.add('hidden');
             window.handleJoinDrive = () => {
@@ -381,11 +421,11 @@
         }
 
         window.toggleSidebar = () => {
-            const sidebar = document.getElementById('sidebar');
-            const backdrop = document.getElementById('sidebar-backdrop');
-            const isHidden = sidebar.classList.contains('-translate-x-full');
-            if (isHidden) { sidebar.classList.remove('-translate-x-full'); if (window.innerWidth < 768) backdrop.classList.remove('hidden'); }
-            else { sidebar.classList.add('-translate-x-full'); backdrop.classList.add('hidden'); }
+            const side = document.getElementById('sidebar');
+            const back = document.getElementById('sidebar-backdrop');
+            const hidden = side.classList.contains('-translate-x-full');
+            if (hidden) { side.classList.remove('-translate-x-full'); if (window.innerWidth < 768) back.classList.remove('hidden'); }
+            else { side.classList.add('-translate-x-full'); back.classList.add('hidden'); }
         };
 
         function showToast(msg, isError = false) {
