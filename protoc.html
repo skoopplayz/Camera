@@ -619,340 +619,647 @@ body {
 
     <script>
         const DB_NAME = "CameraProDB";
-const STORE_NAME = "media";
-let db;
+        const STORE_NAME = "media";
+        let db;
 
-// 1. The Image Processing Engine
-const ImageProcessor = {
-    filters: {
-        none: '',
-        grayscale: 'grayscale(100%)',
-        sepia: 'sepia(100%)',
-        vivid: 'saturate(150%) contrast(110%)',
-        warm: 'sepia(30%) saturate(140%) brightness(110%)',
-        cool: 'hue-rotate(180deg) saturate(120%)',
-        dramatic: 'contrast(150%) brightness(90%) grayscale(50%)'
-    },
-    async process(blob, filterName) {
-        if (!this.filters[filterName] || filterName === 'none') return blob;
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.filter = this.filters[filterName];
-                ctx.drawImage(img, 0, 0);
-                canvas.toBlob(resolve, 'image/jpeg', 0.95);
+        const state = {
+            stream: null,
+            mode: 'photo',
+            isRecording: false,
+            facingMode: 'environment', 
+            flash: false,
+            mediaRecorder: null,
+            chunks: [],
+            settings: { res: 'HD', grid: false, timer: 0 },
+            timerRunning: false,
+            // Gallery State
+            galleryItems: [],
+            selectionMode: false,
+            selectedIds: new Set(),
+            currentFilter: 'all',
+            // Lightbox State
+            lightboxIndex: -1,
+            get currentViewingItems() {
+                return this.galleryItems.filter(i => this.currentFilter === 'all' || i.type === this.currentFilter);
+            }
+        };
+
+        const els = {
+            video: document.getElementById('video-preview'),
+            shutter: document.getElementById('shutter'),
+            modePhoto: document.getElementById('btn-photo-mode'),
+            modeVideo: document.getElementById('btn-video-mode'),
+            modeSwitcher: document.getElementById('mode-switcher'),
+            flash: document.getElementById('flash-btn'),
+            flip: document.getElementById('flip-btn'),
+            canvas: document.getElementById('capture-canvas'),
+            settingsTrigger: document.getElementById('settings-trigger'),
+            settingsSheet: document.getElementById('settings-sheet'),
+            galleryTrigger: document.getElementById('gallery-trigger'),
+            gallerySheet: document.getElementById('gallery-sheet'),
+            overlay: document.getElementById('sheet-overlay'),
+            grid: document.getElementById('camera-grid'),
+            gridToggle: document.getElementById('grid-toggle'),
+            timerDisplay: document.getElementById('timer-display'),
+            lastThumb: document.getElementById('last-capture-img'),
+            galleryIcon: document.getElementById('gallery-icon'),
+            status: document.getElementById('recording-status'),
+            galleryContent: document.getElementById('gallery-content'),
+            emptyGallery: document.getElementById('empty-gallery'),
+            bulkDownload: document.getElementById('bulk-download'),
+            toast: document.getElementById('toast'),
+            // Gallery selection
+            btnSelectMode: document.getElementById('btn-select-mode'),
+            btnCancelSelection: document.getElementById('btn-cancel-selection'),
+            btnSelectAll: document.getElementById('btn-select-all'),
+            actionsDefault: document.getElementById('gallery-actions-default'),
+            actionsSelection: document.getElementById('gallery-actions-selection'),
+            selectionBanner: document.getElementById('selection-banner'),
+            selectionCount: document.getElementById('selection-count'),
+            btnDeleteSelected: document.getElementById('btn-delete-selected'),
+            btnDownloadSelected: document.getElementById('btn-download-selected'),
+            // Lightbox
+            lightbox: document.getElementById('lightbox'),
+            lightboxMain: document.getElementById('lightbox-main'),
+            lightboxClose: document.getElementById('lightbox-close'),
+            lightboxDate: document.getElementById('lightbox-date'),
+            lightboxTime: document.getElementById('lightbox-time'),
+            lightboxDelete: document.getElementById('lightbox-delete'),
+            lightboxDownload: document.getElementById('lightbox-download'),
+            lightboxShare: document.getElementById('lightbox-share'),
+            lightboxPrev: document.getElementById('lightbox-prev'),
+            lightboxNext: document.getElementById('lightbox-next'),
+            lightboxFooter: document.getElementById('lightbox-footer')
+        };
+
+        // --- Database ---
+        const initDB = () => {
+            return new Promise((resolve) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve();
+                };
+            });
+        };
+
+        // --- Camera Core ---
+        async function startCamera() {
+            if (state.stream) {
+                state.stream.getTracks().forEach(t => t.stop());
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: state.facingMode,
+                    width: state.settings.res === '4K' ? { ideal: 3840 } : { ideal: 1920 },
+                    height: state.settings.res === '4K' ? { ideal: 2160 } : { ideal: 1080 }
+                },
+                audio: true
             };
-            img.src = URL.createObjectURL(blob);
-        });
-    }
-};
 
-const state = {
-    stream: null,
-    mode: 'photo',
-    isRecording: false,
-    facingMode: 'environment', 
-    flash: false,
-    mediaRecorder: null,
-    chunks: [],
-    settings: { res: 'HD', grid: false, timer: 0 },
-    timerRunning: false,
-    selectedFilter: 'none', // Track the current filter
-    galleryItems: [],
-    selectionMode: false,
-    selectedIds: new Set(),
-    currentFilter: 'all',
-    lightboxIndex: -1,
-    get currentViewingItems() {
-        return this.galleryItems.filter(i => this.currentFilter === 'all' || i.type === this.currentFilter);
-    }
-};
-
-const els = {
-    video: document.getElementById('video-preview'),
-    shutter: document.getElementById('shutter'),
-    modePhoto: document.getElementById('btn-photo-mode'),
-    modeVideo: document.getElementById('btn-video-mode'),
-    modeSwitcher: document.getElementById('mode-switcher'),
-    flash: document.getElementById('flash-btn'),
-    flip: document.getElementById('flip-btn'),
-    canvas: document.getElementById('capture-canvas'),
-    settingsTrigger: document.getElementById('settings-trigger'),
-    settingsSheet: document.getElementById('settings-sheet'),
-    galleryTrigger: document.getElementById('gallery-trigger'),
-    gallerySheet: document.getElementById('gallery-sheet'),
-    overlay: document.getElementById('sheet-overlay'),
-    grid: document.getElementById('camera-grid'),
-    gridToggle: document.getElementById('grid-toggle'),
-    timerDisplay: document.getElementById('timer-display'),
-    lastThumb: document.getElementById('last-capture-img'),
-    galleryIcon: document.getElementById('gallery-icon'),
-    status: document.getElementById('recording-status'),
-    galleryContent: document.getElementById('gallery-content'),
-    emptyGallery: document.getElementById('empty-gallery'),
-    bulkDownload: document.getElementById('bulk-download'),
-    toast: document.getElementById('toast'),
-    // Selection
-    btnSelectMode: document.getElementById('btn-select-mode'),
-    btnCancelSelection: document.getElementById('btn-cancel-selection'),
-    btnSelectAll: document.getElementById('btn-select-all'),
-    actionsDefault: document.getElementById('gallery-actions-default'),
-    actionsSelection: document.getElementById('gallery-actions-selection'),
-    selectionBanner: document.getElementById('selection-banner'),
-    selectionCount: document.getElementById('selection-count'),
-    btnDeleteSelected: document.getElementById('btn-delete-selected'),
-    btnDownloadSelected: document.getElementById('btn-download-selected'),
-    // Lightbox
-    lightbox: document.getElementById('lightbox'),
-    lightboxMain: document.getElementById('lightbox-main'),
-    lightboxClose: document.getElementById('lightbox-close'),
-    lightboxDate: document.getElementById('lightbox-date'),
-    lightboxTime: document.getElementById('lightbox-time'),
-    lightboxDelete: document.getElementById('lightbox-delete'),
-    lightboxDownload: document.getElementById('lightbox-download'),
-    lightboxShare: document.getElementById('lightbox-share'),
-    lightboxPrev: document.getElementById('lightbox-prev'),
-    lightboxNext: document.getElementById('lightbox-next'),
-    lightboxFooter: document.getElementById('lightbox-footer')
-};
-
-// --- Initialization ---
-const initDB = () => {
-    return new Promise((resolve) => {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = (e) => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+            try {
+                state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                els.video.srcObject = state.stream;
+                const actualFacing = state.stream.getVideoTracks()[0].getSettings().facingMode;
+                els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+            } catch (err) {
+                showToast("Camera blocked or unavailable");
             }
-        };
-        request.onsuccess = (e) => {
-            db = e.target.result;
-            resolve();
-        };
-    });
-};
+        }
 
-async function startCamera() {
-    if (state.stream) state.stream.getTracks().forEach(t => t.stop());
-    const constraints = {
-        video: {
-            facingMode: state.facingMode,
-            width: state.settings.res === '4K' ? { ideal: 3840 } : { ideal: 1920 },
-            height: state.settings.res === '4K' ? { ideal: 2160 } : { ideal: 1080 }
-        },
-        audio: true
-    };
-    try {
-        state.stream = await navigator.mediaDevices.getUserMedia(constraints);
-        els.video.srcObject = state.stream;
-        const actualFacing = state.stream.getVideoTracks()[0].getSettings().facingMode;
-        els.video.style.transform = actualFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
-    } catch (err) {
-        showToast("Camera blocked or unavailable");
-    }
-}
+        function takePhoto() {
+            if (!els.video.videoWidth) return;
+            els.canvas.width = els.video.videoWidth;
+            els.canvas.height = els.video.videoHeight;
+            const ctx = els.canvas.getContext('2d');
+            
+            if (state.facingMode === 'user') {
+                ctx.translate(els.canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(els.video, 0, 0);
+            
+            els.canvas.toBlob(blob => saveToGallery(blob, 'image'), 'image/jpeg', 0.95);
+            els.video.style.filter = 'brightness(2) contrast(0.8)';
+            setTimeout(() => els.video.style.filter = '', 100);
+        }
 
-// --- The Fixed Capture Function ---
-async function takePhoto() {
-    if (!els.video.videoWidth) return;
+        let recordInterval, startTime;
+        function toggleRecording() {
+            if (!state.isRecording) {
+                state.chunks = [];
+                let mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm;codecs=vp9,opus';
+                
+                state.mediaRecorder = new MediaRecorder(state.stream, { mimeType });
+                state.mediaRecorder.ondataavailable = e => state.chunks.push(e.data);
+                state.mediaRecorder.onstop = () => {
+                    const blob = new Blob(state.chunks, { type: state.mediaRecorder.mimeType });
+                    saveToGallery(blob, 'video');
+                    clearInterval(recordInterval);
+                    els.status.textContent = "Camera Pro";
+                    els.status.classList.remove('text-red-600');
+                    setRecordingLock(false);
+                };
 
-    els.canvas.width = els.video.videoWidth;
-    els.canvas.height = els.video.videoHeight;
-    const ctx = els.canvas.getContext('2d');
-    
-    if (state.facingMode === 'user') {
-        ctx.translate(els.canvas.width, 0);
-        ctx.scale(-1, 1);
-    }
-    ctx.drawImage(els.video, 0, 0);
-
-    els.canvas.toBlob(async (blob) => {
-        // APPLY THE ENGINE HERE
-        const processedBlob = await ImageProcessor.process(blob, state.selectedFilter);
-        saveToGallery(processedBlob, 'image');
-        
-        // Visual feedback
-        els.video.style.filter = 'brightness(2) contrast(0.8)';
-        setTimeout(() => {
-            // Restore current live filter after flash
-            els.video.style.filter = ImageProcessor.filters[state.selectedFilter];
-        }, 100);
-    }, 'image/jpeg', 0.95);
-}
-
-function setFilter(filterName) {
-    state.selectedFilter = filterName;
-    els.video.style.filter = ImageProcessor.filters[filterName];
-    showToast(`Filter: ${filterName}`);
-}
-
-// --- Existing logic continues below ---
-let recordInterval, startTime;
-function toggleRecording() {
-    if (!state.isRecording) {
-        state.chunks = [];
-        let mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm;codecs=vp9,opus';
-        state.mediaRecorder = new MediaRecorder(state.stream, { mimeType });
-        state.mediaRecorder.ondataavailable = e => state.chunks.push(e.data);
-        state.mediaRecorder.onstop = () => {
-            const blob = new Blob(state.chunks, { type: state.mediaRecorder.mimeType });
-            saveToGallery(blob, 'video');
-            clearInterval(recordInterval);
-            els.status.textContent = "Camera Pro";
-            els.status.classList.remove('text-red-600');
-            setRecordingLock(false);
-        };
-        state.mediaRecorder.start();
-        state.isRecording = true;
-        setRecordingLock(true);
-        els.shutter.classList.add('recording');
-        els.status.classList.add('text-red-600');
-        startTime = Date.now();
-        recordInterval = setInterval(() => {
-            const diff = Math.floor((Date.now() - startTime) / 1000);
-            const m = Math.floor(diff/60).toString().padStart(2, '0');
-            const s = (diff%60).toString().padStart(2, '0');
-            els.status.textContent = `REC • ${m}:${s}`;
-        }, 1000);
-    } else {
-        state.mediaRecorder.stop();
-        state.isRecording = false;
-        els.shutter.classList.remove('recording');
-    }
-}
-
-async function saveToGallery(blob, type) {
-    const transaction = db.transaction([STORE_NAME], "readwrite");
-    const store = transaction.objectStore(STORE_NAME);
-    const item = {
-        blob: blob,
-        type: type,
-        timestamp: Date.now(),
-        filename: `${type === 'image' ? 'IMG' : 'VID'}_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`
-    };
-    store.add(item);
-    await loadGalleryItems();
-    updateThumb();
-    showToast(type === 'image' ? "Photo saved" : "Video saved");
-}
-
-async function loadGalleryItems() {
-    return new Promise(resolve => {
-        const transaction = db.transaction([STORE_NAME], "readonly");
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.getAll();
-        request.onsuccess = () => {
-            state.galleryItems = request.result.sort((a,b) => b.timestamp - a.timestamp);
-            resolve(state.galleryItems);
-        };
-    });
-}
-
-function renderGallery() {
-    els.galleryContent.innerHTML = '';
-    const filtered = state.galleryItems.filter(i => state.currentFilter === 'all' || i.type === state.currentFilter);
-    if (filtered.length === 0) {
-        els.emptyGallery.classList.remove('hidden');
-    } else {
-        els.emptyGallery.classList.add('hidden');
-        filtered.forEach((item, index) => {
-            const div = document.createElement('div');
-            div.className = `gallery-item ${state.selectedIds.has(item.id) ? 'selected' : ''}`;
-            const url = URL.createObjectURL(item.blob);
-            if (item.type === 'image') {
-                div.innerHTML = `<div class="select-check"><span class="material-symbols-rounded" style="font-size:16px;">check</span></div><img src="${url}" loading="lazy">`;
+                state.mediaRecorder.start();
+                state.isRecording = true;
+                setRecordingLock(true);
+                els.shutter.classList.add('recording');
+                els.status.classList.add('text-red-600');
+                
+                startTime = Date.now();
+                recordInterval = setInterval(() => {
+                    const diff = Math.floor((Date.now() - startTime) / 1000);
+                    const m = Math.floor(diff/60).toString().padStart(2, '0');
+                    const s = (diff%60).toString().padStart(2, '0');
+                    els.status.textContent = `REC • ${m}:${s}`;
+                }, 1000);
             } else {
-                div.innerHTML = `<div class="select-check"><span class="material-symbols-rounded" style="font-size:16px;">check</span></div><video src="${url}#t=0.5"></video><div class="video-thumb-overlay"><div class="video-thumb-play"><span class="material-symbols-rounded fill-icon">play_arrow</span></div></div>`;
+                state.mediaRecorder.stop();
+                state.isRecording = false;
+                els.shutter.classList.remove('recording');
             }
-            div.onclick = () => state.selectionMode ? handleSelection(item.id) : openLightbox(index);
-            els.galleryContent.appendChild(div);
-        });
-    }
-}
+        }
 
-// UI Helpers
-function showToast(msg) {
-    els.toast.textContent = msg;
-    els.toast.style.opacity = '1';
-    els.toast.style.transform = 'translateX(-50%) translateY(-10px)';
-    setTimeout(() => {
-        els.toast.style.opacity = '0';
-        els.toast.style.transform = 'translateX(-50%) translateY(0)';
-    }, 2500);
-}
+        // --- Gallery Engine ---
+        async function saveToGallery(blob, type) {
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            const store = transaction.objectStore(STORE_NAME);
+            const item = {
+                blob: blob,
+                type: type,
+                timestamp: Date.now(),
+                filename: `${type === 'image' ? 'IMG' : 'VID'}_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`
+            };
+            store.add(item);
+            
+            await loadGalleryItems();
+            updateThumb();
+            showToast(type === 'image' ? "Photo saved" : "Video saved");
+        }
 
-function setRecordingLock(locked) {
-    [els.flip, els.modeSwitcher, els.settingsTrigger, els.galleryTrigger].forEach(el => {
-        el.style.pointerEvents = locked ? 'none' : 'auto';
-        el.style.opacity = locked ? '0.3' : '1';
-    });
-}
+        async function loadGalleryItems() {
+            return new Promise(resolve => {
+                const transaction = db.transaction([STORE_NAME], "readonly");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    state.galleryItems = request.result.sort((a,b) => b.timestamp - a.timestamp);
+                    resolve(state.galleryItems);
+                };
+            });
+        }
 
-function closeSheets() {
-    els.settingsSheet.classList.remove('active');
-    els.gallerySheet.classList.remove('active');
-    els.overlay.classList.remove('active');
-}
+        function renderGallery() {
+            els.galleryContent.innerHTML = '';
+            const filtered = state.galleryItems.filter(i => state.currentFilter === 'all' || i.type === state.currentFilter);
+            
+            if (filtered.length === 0) {
+                els.emptyGallery.classList.remove('hidden');
+            } else {
+                els.emptyGallery.classList.add('hidden');
+                filtered.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = `gallery-item ${state.selectedIds.has(item.id) ? 'selected' : ''}`;
+                    const url = URL.createObjectURL(item.blob);
+                    
+                    if (item.type === 'image') {
+                        div.innerHTML = `
+                            <div class="select-check"><span class="material-symbols-rounded" style="font-size:16px; font-weight:700;">check</span></div>
+                            <img src="${url}" loading="lazy">
+                        `;
+                    } else {
+                        div.innerHTML = `
+                            <div class="select-check"><span class="material-symbols-rounded" style="font-size:16px; font-weight:700;">check</span></div>
+                            <video src="${url}#t=0.5"></video>
+                            <div class="video-thumb-overlay">
+                                <div class="video-thumb-play"><span class="material-symbols-rounded fill-icon">play_arrow</span></div>
+                            </div>
+                            <div class="video-badge"><span class="material-symbols-rounded" style="font-size:12px;">videocam</span>VIDEO</div>
+                        `;
+                    }
 
-async function updateThumb() {
-    if (state.galleryItems.length > 0) {
-        const last = state.galleryItems[0];
-        els.lastThumb.src = URL.createObjectURL(last.blob);
-        els.lastThumb.classList.remove('hidden');
-        els.galleryIcon.classList.add('hidden');
-    }
-}
+                    div.onclick = () => {
+                        if (state.selectionMode) {
+                            if (state.selectedIds.has(item.id)) state.selectedIds.delete(item.id);
+                            else state.selectedIds.add(item.id);
+                            updateSelectionUI();
+                            renderGallery();
+                        } else {
+                            openLightbox(index);
+                        }
+                    };
+                    els.galleryContent.appendChild(div);
+                });
+            }
+        }
 
-// Listeners
-els.shutter.onclick = () => {
-    if (state.timerRunning) return;
-    if (state.settings.timer > 0 && !state.isRecording) {
-        state.timerRunning = true;
-        let count = state.settings.timer;
-        els.timerDisplay.classList.remove('hidden');
-        els.timerDisplay.textContent = count;
-        const itv = setInterval(() => {
-            count--;
-            if (count <= 0) {
-                clearInterval(itv);
-                els.timerDisplay.classList.add('hidden');
-                state.timerRunning = false;
+        // --- Lightbox Functions & Custom Video Player ---
+        function openLightbox(index) {
+            state.lightboxIndex = index;
+            els.lightbox.classList.add('active');
+            updateLightboxContent();
+        }
+
+        function updateLightboxContent() {
+            const items = state.currentViewingItems;
+            const item = items[state.lightboxIndex];
+            if (!item) return;
+
+            els.lightboxMain.innerHTML = '';
+            const url = URL.createObjectURL(item.blob);
+            
+            if (item.type === 'image') {
+                els.lightboxFooter.style.display = 'flex';
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'max-w-full max-h-full object-contain animate-in fade-in zoom-in-95 duration-300';
+                els.lightboxMain.appendChild(img);
+            } else {
+                els.lightboxFooter.style.display = 'none'; // Hide download btn for custom player
+                initCustomVideoPlayer(url);
+            }
+
+            const d = new Date(item.timestamp);
+            els.lightboxDate.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            els.lightboxTime.textContent = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+            els.lightboxPrev.style.display = state.lightboxIndex > 0 ? 'flex' : 'none';
+            els.lightboxNext.style.display = state.lightboxIndex < items.length - 1 ? 'flex' : 'none';
+        }
+
+        function initCustomVideoPlayer(src) {
+            const container = document.createElement('div');
+            container.className = 'video-player-container';
+            
+            container.innerHTML = `
+                <video id="lb-video" src="${src}" class="max-w-full max-h-full"></video>
+                <div class="play-pause-center" id="lb-center-icon">
+                    <span class="material-symbols-rounded text-5xl fill-icon">play_arrow</span>
+                </div>
+                <div class="custom-controls" id="lb-controls">
+                    <div class="video-progress-bar" id="lb-progress-bar">
+                        <div class="video-progress-fill" id="lb-progress-fill"></div>
+                    </div>
+                    <div class="flex items-center justify-between text-white">
+                        <div class="flex items-center gap-4">
+                            <button id="lb-play-btn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10">
+                                <span class="material-symbols-rounded fill-icon">play_arrow</span>
+                            </button>
+                            <span class="text-xs font-medium" id="lb-time">00:00 / 00:00</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <button id="lb-fullscreen" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10">
+                                <span class="material-symbols-rounded">fullscreen</span>
+                            </button>
+                            <button id="lb-save" class="w-10 h-10 flex items-center justify-center rounded-full bg-white text-black">
+                                <span class="material-symbols-rounded fill-icon">download</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            els.lightboxMain.appendChild(container);
+
+            const v = container.querySelector('#lb-video');
+            const playBtn = container.querySelector('#lb-play-btn');
+            const centerIcon = container.querySelector('#lb-center-icon');
+            const timeDisplay = container.querySelector('#lb-time');
+            const progressFill = container.querySelector('#lb-progress-fill');
+            const progressBar = container.querySelector('#lb-progress-bar');
+            const saveBtn = container.querySelector('#lb-save');
+            const controls = container.querySelector('#lb-controls');
+
+            const togglePlay = () => {
+                if (v.paused) {
+                    v.play();
+                    playBtn.querySelector('span').textContent = 'pause';
+                    centerIcon.querySelector('span').textContent = 'pause';
+                    centerIcon.classList.add('visible');
+                    setTimeout(() => centerIcon.classList.remove('visible'), 500);
+                } else {
+                    v.pause();
+                    playBtn.querySelector('span').textContent = 'play_arrow';
+                    centerIcon.querySelector('span').textContent = 'play_arrow';
+                    centerIcon.classList.add('visible');
+                }
+            };
+
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60);
+                const s = Math.floor(seconds % 60);
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            };
+
+            v.ontimeupdate = () => {
+                const pct = (v.currentTime / v.duration) * 100;
+                progressFill.style.width = `${pct}%`;
+                timeDisplay.textContent = `${formatTime(v.currentTime)} / ${formatTime(v.duration || 0)}`;
+            };
+
+            v.onclick = togglePlay;
+            playBtn.onclick = togglePlay;
+            
+            progressBar.onclick = (e) => {
+                const rect = progressBar.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                v.currentTime = pos * v.duration;
+            };
+
+            saveBtn.onclick = () => downloadItems([state.currentViewingItems[state.lightboxIndex]]);
+            
+            // Auto-hide controls
+            let hideTimeout;
+            const showControls = () => {
+                controls.style.opacity = '1';
+                clearTimeout(hideTimeout);
+                if (!v.paused) hideTimeout = setTimeout(() => controls.style.opacity = '0', 3000);
+            };
+
+            container.onmousemove = showControls;
+            container.ontouchstart = showControls;
+
+            v.onplay = showControls;
+            v.onended = () => {
+                playBtn.querySelector('span').textContent = 'replay';
+                centerIcon.querySelector('span').textContent = 'replay';
+                centerIcon.classList.add('visible');
+                controls.style.opacity = '1';
+            };
+        }
+
+        function navigateLightbox(dir) {
+            const items = state.currentViewingItems;
+            const newIndex = state.lightboxIndex + dir;
+            if (newIndex >= 0 && newIndex < items.length) {
+                state.lightboxIndex = newIndex;
+                updateLightboxContent();
+            }
+        }
+
+        function closeLightbox() {
+            els.lightbox.classList.remove('active');
+            els.lightboxMain.innerHTML = '';
+            state.lightboxIndex = -1;
+        }
+
+        // --- Selection Logic ---
+        function toggleSelectionMode(active) {
+            state.selectionMode = active;
+            state.selectedIds.clear();
+            els.actionsDefault.classList.toggle('hidden', active);
+            els.actionsSelection.classList.toggle('hidden', !active);
+            els.selectionBanner.classList.toggle('hidden', !active);
+            updateSelectionUI();
+            renderGallery();
+        }
+
+        function updateSelectionUI() {
+            els.selectionCount.textContent = `${state.selectedIds.size} selected`;
+        }
+
+        async function deleteItems(ids) {
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            const store = transaction.objectStore(STORE_NAME);
+            ids.forEach(id => store.delete(id));
+            transaction.oncomplete = async () => {
+                await loadGalleryItems();
+                renderGallery();
+                updateThumb();
+                showToast(`${ids.length} items deleted`);
+            };
+        }
+
+        async function downloadItems(items) {
+            if (items.length === 1) {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(items[0].blob);
+                a.download = items[0].filename;
+                a.click();
+            } else {
+                showToast("Generating ZIP...");
+                const zip = new JSZip();
+                items.forEach(item => zip.file(item.filename, item.blob));
+                const content = await zip.generateAsync({ type: "blob" });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(content);
+                a.download = `CameraPro_Batch_${Date.now()}.zip`;
+                a.click();
+                showToast("Download started");
+            }
+        }
+
+        // --- Helpers ---
+        function showToast(msg) {
+            els.toast.textContent = msg;
+            els.toast.style.opacity = '1';
+            els.toast.style.transform = 'translateX(-50%) translateY(-10px)';
+            setTimeout(() => {
+                els.toast.style.opacity = '0';
+                els.toast.style.transform = 'translateX(-50%) translateY(0)';
+            }, 2500);
+        }
+
+        function setRecordingLock(locked) {
+            [els.flip, els.modeSwitcher, els.settingsTrigger, els.galleryTrigger].forEach(el => {
+                el.style.pointerEvents = locked ? 'none' : 'auto';
+                el.style.opacity = locked ? '0.3' : '1';
+            });
+        }
+
+        function closeSheets() {
+            els.settingsSheet.classList.remove('active');
+            els.gallerySheet.classList.remove('active');
+            els.overlay.classList.remove('active');
+            toggleSelectionMode(false);
+        }
+
+        async function updateThumb() {
+            if (state.galleryItems.length > 0) {
+                const last = state.galleryItems[0];
+                els.lastThumb.src = URL.createObjectURL(last.blob);
+                els.lastThumb.classList.remove('hidden');
+                els.galleryIcon.classList.add('hidden');
+            } else {
+                els.lastThumb.classList.add('hidden');
+                els.galleryIcon.classList.remove('hidden');
+            }
+        }
+
+        // --- Event Listeners ---
+        els.shutter.onclick = () => {
+            if (state.timerRunning) return;
+            if (state.settings.timer > 0 && !state.isRecording) {
+                state.timerRunning = true;
+                let count = state.settings.timer;
+                els.timerDisplay.classList.remove('hidden');
+                els.timerDisplay.textContent = count;
+                const itv = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(itv);
+                        els.timerDisplay.classList.add('hidden');
+                        state.timerRunning = false;
+                        state.mode === 'photo' ? takePhoto() : toggleRecording();
+                    } else els.timerDisplay.textContent = count;
+                }, 1000);
+            } else {
                 state.mode === 'photo' ? takePhoto() : toggleRecording();
-            } else els.timerDisplay.textContent = count;
-        }, 1000);
-    } else {
-        state.mode === 'photo' ? takePhoto() : toggleRecording();
-    }
-};
+            }
+        };
 
-els.galleryTrigger.onclick = async () => {
-    await loadGalleryItems();
-    renderGallery();
-    els.gallerySheet.classList.add('active');
-    els.overlay.classList.add('active');
-};
+        els.galleryTrigger.onclick = async () => {
+            await loadGalleryItems();
+            renderGallery();
+            els.gallerySheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
 
-els.settingsTrigger.onclick = () => {
-    els.settingsSheet.classList.add('active');
-    els.overlay.classList.add('active');
-};
+        els.settingsTrigger.onclick = () => {
+            els.settingsSheet.classList.add('active');
+            els.overlay.classList.add('active');
+        };
 
-els.overlay.onclick = closeSheets;
-els.modePhoto.onclick = () => { state.mode = 'photo'; els.modePhoto.classList.add('active-chip'); els.modeVideo.classList.remove('active-chip'); };
-els.modeVideo.onclick = () => { state.mode = 'video'; els.modeVideo.classList.add('active-chip'); els.modePhoto.classList.remove('active-chip'); };
-els.flip.onclick = () => { state.facingMode = state.facingMode === 'user' ? 'environment' : 'user'; startCamera(); };
+        els.overlay.onclick = closeSheets;
 
-window.onload = async () => {
-    await initDB();
-    await startCamera();
-    await loadGalleryItems();
-    updateThumb();
-};
+        els.modePhoto.onclick = () => {
+            state.mode = 'photo';
+            els.modePhoto.classList.add('active-chip');
+            els.modeVideo.classList.remove('active-chip');
+            document.body.classList.remove('mode-video');
+        };
+
+        els.modeVideo.onclick = () => {
+            state.mode = 'video';
+            els.modeVideo.classList.add('active-chip');
+            els.modePhoto.classList.remove('active-chip');
+            document.body.classList.add('mode-video');
+        };
+
+        els.flip.onclick = () => {
+            state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+            startCamera();
+        };
+
+        // Selection Handlers
+        els.btnSelectMode.onclick = () => toggleSelectionMode(true);
+        els.btnCancelSelection.onclick = () => toggleSelectionMode(false);
+        els.btnSelectAll.onclick = () => {
+            const filtered = state.currentViewingItems;
+            if (state.selectedIds.size === filtered.length) {
+                state.selectedIds.clear();
+            } else {
+                filtered.forEach(item => state.selectedIds.add(item.id));
+            }
+            updateSelectionUI();
+            renderGallery();
+        };
+
+        els.btnDeleteSelected.onclick = () => {
+            if (state.selectedIds.size === 0) return;
+            deleteItems([...state.selectedIds]);
+            toggleSelectionMode(false);
+        };
+        els.btnDownloadSelected.onclick = () => {
+            const items = state.galleryItems.filter(i => state.selectedIds.has(i.id));
+            if (items.length > 0) downloadItems(items);
+        };
+        els.bulkDownload.onclick = () => downloadItems(state.galleryItems);
+
+        // Lightbox Handlers
+        els.lightboxClose.onclick = closeLightbox;
+        els.lightboxPrev.onclick = () => navigateLightbox(-1);
+        els.lightboxNext.onclick = () => navigateLightbox(1);
+        els.lightboxDelete.onclick = () => {
+            const item = state.currentViewingItems[state.lightboxIndex];
+            if (item) {
+                deleteItems([item.id]);
+                closeLightbox();
+            }
+        };
+        els.lightboxDownload.onclick = () => {
+            const item = state.currentViewingItems[state.lightboxIndex];
+            if (item) downloadItems([item]);
+        };
+        els.lightboxShare.onclick = async () => {
+            const item = state.currentViewingItems[state.lightboxIndex];
+            if (!item || !navigator.share) {
+                showToast("Sharing not supported on this device");
+                return;
+            }
+            const file = new File([item.blob], item.filename, { type: item.blob.type });
+            try {
+                await navigator.share({ files: [file], title: 'Camera Pro' });
+            } catch (e) { console.error(e); }
+        };
+
+        // Settings Toggles
+        document.querySelectorAll('.res-toggle').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.res-toggle').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.settings.res = btn.dataset.res;
+                startCamera();
+            };
+        });
+
+        els.gridToggle.onclick = () => {
+            state.settings.grid = !state.settings.grid;
+            els.grid.style.opacity = state.settings.grid ? '1' : '0';
+            els.gridToggle.classList.toggle('bg-blue-600', state.settings.grid);
+            els.gridToggle.querySelector('.dot').style.transform = state.settings.grid ? 'translateX(20px)' : 'translateX(0)';
+        };
+
+        document.querySelectorAll('.timer-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.settings.timer = parseInt(btn.dataset.timer);
+            };
+        });
+
+        document.querySelectorAll('.filter-chip').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active-chip'));
+                btn.classList.add('active-chip');
+                state.currentFilter = btn.dataset.filter;
+                renderGallery();
+            };
+        });
+
+        els.flash.onclick = async () => {
+            const track = state.stream?.getVideoTracks()[0];
+            const caps = track?.getCapabilities?.() || {};
+            if (caps.torch) {
+                state.flash = !state.flash;
+                await track.applyConstraints({ advanced: [{ torch: state.flash }] });
+                els.flash.querySelector('span').textContent = state.flash ? 'flash_on' : 'flash_off';
+                els.flash.classList.toggle('text-yellow-500', state.flash);
+            } else showToast("Flash not supported");
+        };
+
+        // Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            if (!els.lightbox.classList.contains('active')) return;
+            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+        window.onload = async () => {
+            await initDB();
+            await startCamera();
+            await loadGalleryItems();
+            updateThumb();
+        };
     </script>
 </body>
 </html>
