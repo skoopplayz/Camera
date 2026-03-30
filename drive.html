@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Drive - M3</title>
+    <title>Gemini Drive - M3 Standalone</title>
     <!-- Fonts: Strictly Google Sans and Roboto -->
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -14,9 +14,10 @@
                 extend: {
                     colors: {
                         'm3-surface': '#f8f9fc',
-                        'm3-surface-container': '#f0f4f9',
                         'm3-surface-container-low': '#f3f6fc',
+                        'm3-surface-container': '#f0f4f9',
                         'm3-surface-container-high': '#e9eef6',
+                        'm3-surface-container-highest': '#e3e8ef',
                         'm3-primary': '#0b57d0',
                         'm3-on-primary': '#ffffff',
                         'm3-primary-container': '#d3e3fd',
@@ -35,258 +36,122 @@
         }
     </script>
     <style>
-        body { 
-            background-color: #f8f9fc; 
-            color: #1f1f1f; 
-            overflow: hidden; 
-            font-family: 'Roboto', 'Google Sans', sans-serif; 
-        }
-        
-        /* Centered Header Layout */
-        header {
-            display: grid;
-            grid-template-columns: 80px 1fr 80px;
-            align-items: center;
-            height: 64px;
-        }
-
-        /* Circular Icon Buttons */
-        .btn-circle-m3 {
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 9999px;
-            transition: background-color 0.2s;
-            flex-shrink: 0;
-            margin: 0 auto;
-        }
+        body { background-color: #f8f9fc; color: #1f1f1f; overflow: hidden; font-family: 'Roboto', 'Google Sans', sans-serif; }
+        header { display: grid; grid-template-columns: 80px 1fr 80px; align-items: center; height: 64px; }
+        .btn-circle-m3 { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; transition: background-color 0.2s; flex-shrink: 0; margin: 0 auto; }
         .btn-circle-m3:hover { background-color: rgba(0, 0, 0, 0.08); }
-        .btn-circle-m3:active { background-color: rgba(0, 0, 0, 0.12); }
-
-        /* M3 Navigation Items - Pill Shaped */
-        .nav-item {
-            border-radius: 9999px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            margin: 0 12px;
-            padding: 0 16px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .nav-item.active {
-            background-color: #d3e3fd;
-            color: #041e49;
-            font-weight: 500;
-        }
+        .nav-item { border-radius: 9999px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); margin: 0 12px; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; }
+        .nav-item.active { background-color: #d3e3fd; color: #041e49; font-weight: 500; }
         .nav-item.active span { font-variation-settings: 'FILL' 1; }
-
-        /* M3 FAB - Floating Action Button */
-        .fab-m3 {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            height: 56px;
-            padding: 0 20px;
-            background-color: white;
-            color: #0b57d0;
-            border-radius: 16px;
-            box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 100;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .fab-m3:hover {
-            box-shadow: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3);
-            background-color: #f7f9fc;
-        }
-        .fab-m3:active { transform: scale(0.96); }
-
-        /* Search Bar M3 */
-        .search-container-m3:focus-within {
-            background-color: white !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        /* Modal / Overlay */
-        .m3-dialog-overlay {
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(8px);
-        }
-
-        /* Image Grid Card */
-        .image-card-m3 {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .image-card-m3:hover {
-            transform: translateY(-2px);
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .fab-m3 { position: fixed; bottom: 24px; right: 24px; height: 64px; padding: 0 24px; background-color: #ffffff; color: #0b57d0; border-radius: 16px; box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; z-index: 100; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fab-m3:hover { box-shadow: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3); background-color: #f8faff; }
+        .m3-dialog-overlay { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-
-        /* Scrollbar */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @media (max-width: 768px) { #sidebar.hidden-mobile { transform: translateX(-100%); } }
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #c4c7c5; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #9da09e; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <!-- M3 Centered Header -->
-    <header class="px-2 shrink-0 bg-m3-surface">
-        <!-- Left: Menu -->
-        <button onclick="toggleSidebar()" class="btn-circle-m3">
-            <span class="material-symbols-outlined">menu</span>
-        </button>
+    <!-- Standalone Setup Screen (Hidden if config exists) -->
+    <div id="setup-screen" class="fixed inset-0 z-[1000] bg-m3-surface hidden flex items-center justify-center p-6">
+        <div class="bg-white rounded-[28px] w-full max-w-lg p-8 shadow-xl border border-gray-100">
+            <span class="material-symbols-outlined text-m3-primary text-5xl mb-4">settings_suggest</span>
+            <h1 class="text-2xl font-medium google-sans mb-2">Drive Setup</h1>
+            <p class="text-gray-600 text-sm mb-6">To host this drive yourself, paste your Firebase Configuration object below. You can find this in your Firebase Project Settings.</p>
+            <textarea id="setup-config-input" class="w-full h-40 bg-m3-surface-container rounded-2xl p-4 font-mono text-xs outline-none border-2 border-transparent focus:border-m3-primary transition-all mb-4" placeholder='const firebaseConfig = { ... };'></textarea>
+            <button onclick="saveStandaloneConfig()" class="w-full bg-m3-primary text-white py-4 rounded-full font-medium hover:shadow-lg transition-all active:scale-95">Initialize Drive</button>
+            <p class="text-[10px] text-gray-400 mt-4 text-center">Config is stored locally in your browser.</p>
+        </div>
+    </div>
 
-        <!-- Center: Centered Search Bar -->
+    <!-- M3 Header -->
+    <header class="px-2 shrink-0 bg-m3-surface z-50">
+        <button onclick="toggleSidebar()" class="btn-circle-m3"><span class="material-symbols-outlined">menu</span></button>
         <div class="flex justify-center w-full max-w-4xl mx-auto">
-            <div class="search-container-m3 flex items-center bg-[#edf2fc] h-12 w-full px-4 rounded-full transition-all group">
+            <div class="flex items-center bg-[#edf2fc] h-12 w-full px-4 rounded-full focus-within:bg-white focus-within:shadow-sm transition-all group">
                 <span class="material-symbols-outlined text-gray-500 mr-3">search</span>
                 <input type="text" id="search-input" placeholder="Search in Drive" class="bg-transparent w-full outline-none text-sm font-medium">
             </div>
         </div>
-
-        <!-- Right: Settings -->
-        <button onclick="openSettings()" class="btn-circle-m3 text-gray-600">
-            <span class="material-symbols-outlined">settings</span>
-        </button>
+        <button onclick="openSettings()" class="btn-circle-m3 text-gray-600"><span class="material-symbols-outlined">settings</span></button>
     </header>
 
     <div class="flex flex-1 overflow-hidden relative">
-        <!-- Sidebar Backdrop (Mobile) -->
         <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/20 z-30 hidden md:hidden"></div>
-
-        <!-- Sidebar -->
         <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 w-72 flex flex-col z-40 bg-m3-surface md:bg-transparent transition-transform duration-300 md:translate-x-0 -translate-x-full">
-            <nav class="flex flex-col gap-1 pt-4 overflow-y-auto" id="main-nav">
-                <button data-view="home" class="nav-item active">
-                    <span class="material-symbols-outlined">home</span>
-                    <span class="text-sm font-medium">Home</span>
-                </button>
-                <button data-view="drive" class="nav-item">
-                    <span class="material-symbols-outlined">hard_drive</span>
-                    <span class="text-sm font-medium">My Drive</span>
-                </button>
-                <button data-view="recent" class="nav-item">
-                    <span class="material-symbols-outlined">schedule</span>
-                    <span class="text-sm font-medium">Recent</span>
-                </button>
-                <button data-view="starred" class="nav-item">
-                    <span class="material-symbols-outlined text-amber-500">star</span>
-                    <span class="text-sm font-medium">Starred</span>
-                </button>
-                <button data-view="trash" class="nav-item">
-                    <span class="material-symbols-outlined">delete</span>
-                    <span class="text-sm font-medium">Trash</span>
-                </button>
+            <nav class="flex flex-col gap-1 pt-6 overflow-y-auto" id="main-nav">
+                <button data-view="home" class="nav-item active"><span class="material-symbols-outlined">home</span><span class="text-sm font-medium">Home</span></button>
+                <button data-view="drive" class="nav-item"><span class="material-symbols-outlined">hard_drive</span><span class="text-sm font-medium">My Drive</span></button>
+                <button data-view="recent" class="nav-item"><span class="material-symbols-outlined">schedule</span><span class="text-sm font-medium">Recent</span></button>
+                <button data-view="starred" class="nav-item"><span class="material-symbols-outlined text-amber-500">star</span><span class="text-sm font-medium">Starred</span></button>
+                <button data-view="trash" class="nav-item"><span class="material-symbols-outlined">delete</span><span class="text-sm font-medium">Trash</span></button>
             </nav>
-
-            <!-- Sync ID Box -->
-            <div class="mt-auto px-4 pb-6 pt-4">
+            <div class="mt-auto px-4 pb-8 pt-4">
                 <div class="p-6 bg-m3-surface-container rounded-[28px] border border-gray-200">
                     <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Sync ID</p>
-                    <p id="display-id" class="text-xs font-mono break-all text-gray-700 mb-4">Connecting...</p>
+                    <p id="display-id" class="text-xs font-mono break-all text-gray-700 mb-4 tracking-tighter">Connecting...</p>
                     <button onclick="copyMyId()" class="w-full py-2.5 bg-white rounded-full text-[11px] font-bold text-m3-primary uppercase border border-gray-200 hover:bg-gray-50 transition-colors">Copy ID</button>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Content Area -->
         <main class="flex-1 bg-white mx-0 md:mr-4 md:mb-4 rounded-none md:rounded-[32px] border border-gray-200 overflow-hidden flex flex-col">
             <div class="px-8 py-6 flex items-center justify-between border-b border-gray-50">
                 <h1 id="view-title" class="text-2xl font-normal text-gray-900 capitalize">Home</h1>
-                <div id="trash-actions" class="hidden">
-                    <button onclick="emptyTrash()" class="text-sm font-medium text-red-600 px-6 py-2 rounded-full border border-red-100 hover:bg-red-50 transition-colors">Empty Trash</button>
-                </div>
+                <div id="trash-actions" class="hidden"><button onclick="emptyTrash()" class="text-sm font-medium text-red-600 px-6 py-2 rounded-full border border-red-100 hover:bg-red-50">Empty Trash</button></div>
             </div>
-
             <div id="scroll-container" class="flex-1 overflow-y-auto p-8 pt-6">
-                <div id="files-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-                    <!-- Data injected by JS -->
-                </div>
+                <div id="files-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
             </div>
         </main>
     </div>
 
-    <!-- M3 Floating Action Button -->
-    <button id="upload-btn" class="fab-m3">
-        <span class="material-symbols-outlined" style="font-variation-settings: 'wght' 500;">add</span>
-        <span class="text-sm font-medium">New</span>
-    </button>
+    <button id="upload-btn" class="fab-m3"><span class="material-symbols-outlined" style="font-variation-settings: 'wght' 500;">add</span><span class="text-sm font-medium">New</span></button>
 
-    <!-- M3 Dialog: Settings -->
+    <!-- M3 Settings Modal -->
     <div id="settings-modal" class="m3-dialog-overlay fixed inset-0 hidden z-[200] flex items-center justify-center p-4">
-        <div class="bg-m3-surface-container-high rounded-[28px] w-full max-w-md shadow-2xl animate-fade-in overflow-hidden">
-            <div class="px-6 py-4 flex items-center justify-between">
+        <div class="bg-m3-surface-container-high rounded-[28px] w-full max-w-md shadow-2xl animate-fade-in overflow-hidden relative">
+            <div class="px-6 h-16 flex items-center justify-between">
                 <h2 class="text-xl font-medium text-gray-900 ml-2">Settings</h2>
-                <button onclick="closeSettings()" class="btn-circle-m3">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
+                <button onclick="closeSettings()" class="btn-circle-m3 hover:bg-black/5"><span class="material-symbols-outlined">close</span></button>
             </div>
-            
-            <div class="p-8 space-y-8 bg-white rounded-t-[28px]">
+            <div class="p-8 space-y-8 bg-white rounded-t-[28px] border-t border-gray-100">
                 <section>
                     <label class="text-xs font-bold text-m3-primary uppercase mb-4 block tracking-wider">Storage Sync</label>
-                    <p class="text-sm text-gray-600 mb-6 leading-relaxed">Enter a unique Drive ID to sync your photo library across devices.</p>
-                    
+                    <p class="text-sm text-gray-600 mb-6 leading-relaxed">Sync across devices by entering a unique Drive ID below.</p>
                     <div class="space-y-4">
-                        <input type="text" id="join-id-input" placeholder="Enter Drive ID" 
-                               class="w-full bg-m3-surface-container border-2 border-transparent rounded-2xl px-5 py-4 text-sm focus:border-m3-primary focus:bg-white outline-none transition-all">
-                        <button onclick="handleJoinDrive()" class="w-full bg-m3-primary text-white py-4 rounded-full text-sm font-medium shadow-sm hover:shadow-md transition-all active:scale-95">
-                            Switch Drive
-                        </button>
+                        <input type="text" id="join-id-input" placeholder="Enter Drive ID" class="w-full bg-m3-surface-container border-2 border-transparent rounded-2xl px-5 py-4 text-sm focus:border-m3-primary outline-none transition-all placeholder:text-gray-400">
+                        <button onclick="handleJoinDrive()" class="w-full bg-m3-primary text-white py-4 rounded-full text-sm font-medium shadow-sm hover:shadow-md transition-all active:scale-95">Switch Drive</button>
                     </div>
                 </section>
-                
-                <section class="pt-6 border-t border-gray-100">
-                    <button onclick="resetToLocal()" class="w-full text-m3-error text-sm font-medium flex items-center justify-center gap-3 hover:bg-red-50 py-3 rounded-full transition-colors">
-                        <span class="material-symbols-outlined text-[20px]">restart_alt</span>
-                        Reset to Local Drive
-                    </button>
+                <section class="pt-6 border-t border-gray-100 flex justify-center">
+                    <button onclick="resetToLocal()" class="text-m3-error text-sm font-medium flex items-center gap-2 hover:bg-red-50 px-4 py-2 rounded-full transition-colors"><span class="material-symbols-outlined text-[20px]">restart_alt</span>Reset to Local</button>
                 </section>
             </div>
         </div>
     </div>
 
-    <!-- M3 Full Image Previewer -->
-    <div id="preview-overlay" class="fixed inset-0 hidden z-[300] flex flex-col items-center justify-center p-4 bg-black/95 transition-opacity">
-        <!-- Preview Toolbar -->
+    <!-- M3 Image Viewer -->
+    <div id="preview-overlay" class="fixed inset-0 hidden z-[300] flex flex-col items-center justify-center p-4 bg-black/95 transition-opacity duration-300">
         <div class="absolute top-0 left-0 right-0 h-16 flex items-center justify-between px-6 bg-gradient-to-b from-black/80 to-transparent">
-            <div class="flex items-center gap-4">
-                <button onclick="closePreview()" class="btn-circle-m3 text-white hover:bg-white/10">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                </button>
-                <span id="preview-name" class="text-white font-medium truncate max-w-xs md:max-w-md">Image Name</span>
+            <div class="flex items-center gap-4 text-white">
+                <button onclick="closePreview()" class="btn-circle-m3 hover:bg-white/10"><span class="material-symbols-outlined">arrow_back</span></button>
+                <span id="preview-name" class="font-medium truncate max-w-xs md:max-w-md">Image</span>
             </div>
             <div class="flex items-center gap-2">
-                <button id="preview-star-btn" class="btn-circle-m3 text-white hover:bg-white/10">
-                    <span id="preview-star-icon" class="material-symbols-outlined">star_border</span>
-                </button>
-                <button id="preview-delete-btn" class="btn-circle-m3 text-red-400 hover:bg-white/10">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-                <a id="preview-download-link" href="#" download class="btn-circle-m3 text-white hover:bg-white/10">
-                    <span class="material-symbols-outlined">download</span>
-                </a>
+                <button id="preview-star-btn" class="btn-circle-m3 text-white hover:bg-white/10"><span id="preview-star-icon" class="material-symbols-outlined">star_border</span></button>
+                <button id="preview-delete-btn" class="btn-circle-m3 text-red-400 hover:bg-white/10"><span class="material-symbols-outlined">delete</span></button>
+                <a id="preview-download-link" href="#" download class="btn-circle-m3 text-white hover:bg-white/10"><span class="material-symbols-outlined">download</span></a>
             </div>
         </div>
-        
-        <!-- Image Container -->
-        <div class="w-full h-full flex items-center justify-center p-4 md:p-12 overflow-hidden">
-            <img id="preview-img" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-fade-in" alt="Full Preview">
-        </div>
+        <div class="w-full h-full flex items-center justify-center p-4 md:p-12 overflow-hidden"><img id="preview-img" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-fade-in"></div>
     </div>
 
     <input type="file" id="file-input" class="hidden" accept="image/*">
-
-    <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#323232] text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 translate-y-32 transition-transform duration-300 z-[400]">
         <div id="toast-spinner" class="animate-spin w-5 h-5 border-2 border-white/20 border-t-white rounded-full"></div>
         <span id="toast-msg" class="text-sm font-medium">Processing...</span>
@@ -297,263 +162,230 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, addDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // APP INIT
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'm3-drive-final';
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // STANDALONE CONFIG LOGIC
+        function getFirebaseConfig() {
+            // Priority 1: Environment variable
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                return JSON.parse(__firebase_config);
+            }
+            // Priority 2: LocalStorage
+            const saved = localStorage.getItem('standalone_firebase_config');
+            if (saved) return JSON.parse(saved);
+            return null;
+        }
 
-        let user = null;
-        let activeUid = localStorage.getItem('sync_drive_uid');
-        let allFiles = [];
-        let currentView = 'home';
-        let searchQuery = '';
-        let activePreviewId = null;
+        const config = getFirebaseConfig();
+        if (!config) {
+            document.getElementById('setup-screen').classList.remove('hidden');
+        } else {
+            initAppWithConfig(config);
+        }
 
-        // UI HELPERS
+        window.saveStandaloneConfig = () => {
+            const val = document.getElementById('setup-config-input').value;
+            try {
+                // Regex to find the object inside a potential JS snippet
+                const match = val.match(/\{[\s\S]*\}/);
+                if (!match) throw new Error("Invalid format");
+                const objStr = match[0];
+                // Use Function constructor to safely evaluate a JS object string
+                const obj = new Function(`return ${objStr}`)();
+                if (!obj.apiKey || !obj.projectId) throw new Error("Missing key fields");
+                localStorage.setItem('standalone_firebase_config', JSON.stringify(obj));
+                location.reload();
+            } catch (e) {
+                alert("Error parsing config. Make sure you copy the entire firebaseConfig object correctly.");
+            }
+        };
+
+        function initAppWithConfig(firebaseConfig) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'standalone-drive';
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            let user = null;
+            let activeUid = localStorage.getItem('sync_drive_uid');
+            let allFiles = [];
+            let currentView = 'home';
+            let searchQuery = '';
+            let activePreviewId = null;
+
+            // Auth
+            const initAuth = async () => {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            };
+
+            onAuthStateChanged(auth, (u) => {
+                if (u) {
+                    user = u;
+                    if (!activeUid) activeUid = u.uid;
+                    document.getElementById('display-id').textContent = activeUid;
+                    subscribeToFiles();
+                } else {
+                    initAuth();
+                }
+            });
+
+            function subscribeToFiles() {
+                const colRef = collection(db, 'artifacts', appId, 'users', activeUid, 'files');
+                onSnapshot(colRef, (snapshot) => {
+                    allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    render();
+                    if (activePreviewId) {
+                        const updated = allFiles.find(f => f.id === activePreviewId);
+                        if (updated) updatePreviewUI(updated);
+                        else closePreview();
+                    }
+                }, (err) => {
+                    if (err.code === 'permission-denied') {
+                        showToast("Access Denied", true);
+                        setTimeout(resetToLocal, 2000);
+                    }
+                });
+            }
+
+            async function compressImage(dataUrl, maxWidth = 1200, quality = 0.6) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width; let height = img.height;
+                        if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const result = canvas.toDataURL('image/jpeg', quality);
+                        if (result.length > 1000000) resolve(compressImage(dataUrl, maxWidth * 0.8, quality * 0.8));
+                        else resolve(result);
+                    };
+                    img.src = dataUrl;
+                });
+            }
+
+            function render() {
+                const grid = document.getElementById('files-grid');
+                let filtered = allFiles.filter(f => {
+                    const matchesSearch = (f.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+                    if (!matchesSearch) return false;
+                    switch(currentView) {
+                        case 'trash': return f.trashed === true;
+                        case 'starred': return f.starred === true && !f.trashed;
+                        default: return !f.trashed;
+                    }
+                });
+
+                if (currentView === 'recent' || currentView === 'home') filtered.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                else filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+                if (filtered.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full py-40 flex flex-col items-center justify-center text-gray-400"><span class="material-symbols-outlined text-8xl mb-4 opacity-30">cloud_off</span><p class="google-sans text-xl">Empty</p></div>`;
+                    return;
+                }
+
+                grid.innerHTML = filtered.map(file => `
+                    <div class="group flex flex-col gap-3 animate-fade-in" ondblclick="window.openPreviewById('${file.id}')">
+                        <div class="relative aspect-square bg-gray-100 rounded-[32px] overflow-hidden border border-gray-200 group-hover:shadow-lg transition-all cursor-pointer">
+                            <img src="${file.url}" class="w-full h-full object-cover select-none">
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors"></div>
+                            <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-1 group-hover:translate-y-0">
+                                <button onclick="event.stopPropagation(); window.toggleStar('${file.id}', ${!file.starred})" class="btn-circle-m3 w-10 h-10 bg-white/95 text-amber-500 shadow-md hover:bg-white active:scale-90"><span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' ${file.starred ? 1 : 0}">${file.starred ? 'star' : 'star_border'}</span></button>
+                                <button onclick="event.stopPropagation(); window.toggleTrash('${file.id}', ${!file.trashed})" class="btn-circle-m3 w-10 h-10 bg-white/95 ${file.trashed ? 'text-blue-600' : 'text-red-500'} shadow-md hover:bg-white active:scale-90"><span class="material-symbols-outlined text-[18px]">${file.trashed ? 'restore' : 'delete'}</span></button>
+                            </div>
+                        </div>
+                        <div class="px-2"><p class="text-sm font-medium text-gray-800 truncate select-none">${file.name}</p></div>
+                    </div>`).join('');
+            }
+
+            window.openPreviewById = (id) => {
+                const file = allFiles.find(f => f.id === id);
+                if (!file) return;
+                activePreviewId = id;
+                updatePreviewUI(file);
+                document.getElementById('preview-overlay').classList.remove('hidden');
+            };
+
+            function updatePreviewUI(file) {
+                document.getElementById('preview-img').src = file.url;
+                document.getElementById('preview-name').textContent = file.name;
+                document.getElementById('preview-download-link').href = file.url;
+                const starIcon = document.getElementById('preview-star-icon');
+                starIcon.textContent = file.starred ? 'star' : 'star_border';
+                starIcon.style.fontVariationSettings = `'FILL' ${file.starred ? 1 : 0}`;
+                document.getElementById('preview-star-btn').onclick = () => window.toggleStar(file.id, !file.starred);
+                document.getElementById('preview-delete-btn').onclick = () => { if (confirm("Move to Trash?")) { window.toggleTrash(file.id, true); closePreview(); } };
+            }
+
+            window.closePreview = () => { document.getElementById('preview-overlay').classList.add('hidden'); activePreviewId = null; };
+
+            const trigger = document.getElementById('upload-btn');
+            const input = document.getElementById('file-input');
+            trigger.onclick = () => input.click();
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                showToast(`Uploading ${file.name}...`);
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    try {
+                        const compressedUrl = await compressImage(ev.target.result);
+                        await addDoc(collection(db, 'artifacts', appId, 'users', activeUid, 'files'), {
+                            name: file.name, url: compressedUrl, starred: false, trashed: false, timestamp: serverTimestamp()
+                        });
+                        hideToast();
+                    } catch (err) { showToast("Upload Failed", true); setTimeout(hideToast, 2000); }
+                };
+                reader.readAsDataURL(file);
+                input.value = '';
+            };
+
+            window.toggleStar = async (id, state) => await updateDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', id), { starred: state });
+            window.toggleTrash = async (id, state) => await updateDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', id), { trashed: state });
+            window.emptyTrash = async () => {
+                if (!confirm("Permanently delete everything?")) return;
+                const trashed = allFiles.filter(f => f.trashed);
+                for (const f of trashed) await deleteDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', f.id));
+            };
+
+            document.querySelectorAll('#main-nav button').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentView = btn.dataset.view;
+                    document.getElementById('view-title').textContent = currentView.replace('-', ' ');
+                    document.getElementById('trash-actions').classList.toggle('hidden', currentView !== 'trash');
+                    render();
+                    if (window.innerWidth < 768) toggleSidebar();
+                };
+            });
+
+            document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value; render(); };
+            window.openSettings = () => document.getElementById('settings-modal').classList.remove('hidden');
+            window.closeSettings = () => document.getElementById('settings-modal').classList.add('hidden');
+            window.handleJoinDrive = () => {
+                const id = document.getElementById('join-id-input').value.trim();
+                if (id.length > 5) { localStorage.setItem('sync_drive_uid', id); location.reload(); }
+            };
+            window.resetToLocal = () => { localStorage.removeItem('sync_drive_uid'); location.reload(); };
+            window.copyMyId = () => {
+                const id = activeUid;
+                navigator.clipboard.writeText(id).then(() => { showToast("ID Copied"); setTimeout(hideToast, 2000); }).catch(() => {
+                    const el = document.createElement('textarea'); el.value = id; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+                    showToast("ID Copied"); setTimeout(hideToast, 2000);
+                });
+            };
+        }
+
         window.toggleSidebar = () => {
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('sidebar-backdrop');
             const isHidden = sidebar.classList.contains('-translate-x-full');
-            
-            if (isHidden) {
-                sidebar.classList.remove('-translate-x-full');
-                if (window.innerWidth < 768) backdrop.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                backdrop.classList.add('hidden');
-            }
-        };
-
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-
-        onAuthStateChanged(auth, (u) => {
-            if (u) {
-                user = u;
-                if (!activeUid) activeUid = u.uid;
-                document.getElementById('display-id').textContent = activeUid;
-                subscribeToFiles();
-            } else {
-                initAuth();
-            }
-        });
-
-        function subscribeToFiles() {
-            const colRef = collection(db, 'artifacts', appId, 'users', activeUid, 'files');
-            onSnapshot(colRef, (snapshot) => {
-                allFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                render();
-                if (activePreviewId) {
-                    const updated = allFiles.find(f => f.id === activePreviewId);
-                    if (updated) updatePreviewUI(updated);
-                    else closePreview();
-                }
-            }, (err) => {
-                if (err.code === 'permission-denied') {
-                    showToast("Drive Access Denied", true);
-                    setTimeout(resetToLocal, 2000);
-                }
-            });
-        }
-
-        async function compressImage(dataUrl, maxWidth = 1200, quality = 0.6) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > maxWidth) {
-                        height = (maxWidth / width) * height;
-                        width = maxWidth;
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const result = canvas.toDataURL('image/jpeg', quality);
-                    if (result.length > 1000000) resolve(compressImage(dataUrl, maxWidth * 0.8, quality * 0.8));
-                    else resolve(result);
-                };
-                img.src = dataUrl;
-            });
-        }
-
-        function render() {
-            const grid = document.getElementById('files-grid');
-            let filtered = allFiles.filter(f => {
-                const matchesSearch = (f.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-                if (!matchesSearch) return false;
-                switch(currentView) {
-                    case 'trash': return f.trashed === true;
-                    case 'starred': return f.starred === true && !f.trashed;
-                    default: return !f.trashed;
-                }
-            });
-
-            if (currentView === 'recent' || currentView === 'home') {
-                filtered.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-            } else {
-                filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-            }
-
-            if (filtered.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-40 flex flex-col items-center justify-center text-gray-400">
-                    <span class="material-symbols-outlined text-8xl mb-4 opacity-30">cloud_off</span>
-                    <p class="google-sans text-xl">No files found</p>
-                </div>`;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(file => `
-                <div class="image-card-m3 group flex flex-col gap-3 animate-fade-in" ondblclick="window.openPreviewById('${file.id}')">
-                    <div class="relative aspect-square bg-gray-100 rounded-[32px] overflow-hidden border border-gray-200 group-hover:shadow-lg transition-all cursor-pointer">
-                        <img src="${file.url}" class="w-full h-full object-cover select-none">
-                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors"></div>
-                        
-                        <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-1 group-hover:translate-y-0">
-                            <button onclick="event.stopPropagation(); window.toggleStar('${file.id}', ${!file.starred})" class="btn-circle-m3 w-10 h-10 bg-white/95 text-amber-500 shadow-md hover:bg-white active:scale-90 transition-transform">
-                                <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' ${file.starred ? 1 : 0}">${file.starred ? 'star' : 'star_border'}</span>
-                            </button>
-                            <button onclick="event.stopPropagation(); window.toggleTrash('${file.id}', ${!file.trashed})" class="btn-circle-m3 w-10 h-10 bg-white/95 ${file.trashed ? 'text-blue-600' : 'text-red-500'} shadow-md hover:bg-white active:scale-90 transition-transform">
-                                <span class="material-symbols-outlined text-[20px]">${file.trashed ? 'restore' : 'delete'}</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="px-2">
-                        <p class="text-sm font-medium text-gray-800 truncate select-none">${file.name}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // PREVIEW FUNCTIONS
-        window.openPreviewById = (id) => {
-            const file = allFiles.find(f => f.id === id);
-            if (!file) return;
-            activePreviewId = id;
-            updatePreviewUI(file);
-            document.getElementById('preview-overlay').classList.remove('hidden');
-        };
-
-        function updatePreviewUI(file) {
-            document.getElementById('preview-img').src = file.url;
-            document.getElementById('preview-name').textContent = file.name;
-            document.getElementById('preview-download-link').href = file.url;
-            const starIcon = document.getElementById('preview-star-icon');
-            starIcon.textContent = file.starred ? 'star' : 'star_border';
-            starIcon.style.fontVariationSettings = `'FILL' ${file.starred ? 1 : 0}`;
-            
-            document.getElementById('preview-star-btn').onclick = () => window.toggleStar(file.id, !file.starred);
-            document.getElementById('preview-delete-btn').onclick = () => {
-                if (confirm("Move this file to Trash?")) {
-                    window.toggleTrash(file.id, true);
-                    closePreview();
-                }
-            };
-        }
-
-        window.closePreview = () => {
-            document.getElementById('preview-overlay').classList.add('hidden');
-            activePreviewId = null;
-        };
-
-        // CORE ACTIONS
-        const trigger = document.getElementById('upload-btn');
-        const input = document.getElementById('file-input');
-
-        trigger.onclick = () => input.click();
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            showToast(`Uploading ${file.name}...`);
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                try {
-                    const compressedUrl = await compressImage(ev.target.result);
-                    await addDoc(collection(db, 'artifacts', appId, 'users', activeUid, 'files'), {
-                        name: file.name,
-                        url: compressedUrl,
-                        starred: false,
-                        trashed: false,
-                        timestamp: serverTimestamp()
-                    });
-                    hideToast();
-                } catch (err) {
-                    showToast("Upload Failed", true);
-                    setTimeout(hideToast, 2000);
-                }
-            };
-            reader.readAsDataURL(file);
-            input.value = '';
-        };
-
-        window.toggleStar = async (id, state) => {
-            await updateDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', id), { starred: state });
-        };
-
-        window.toggleTrash = async (id, state) => {
-            await updateDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', id), { trashed: state });
-        };
-
-        window.emptyTrash = async () => {
-            if (!confirm("Permanently delete everything?")) return;
-            const trashed = allFiles.filter(f => f.trashed);
-            for (const f of trashed) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', activeUid, 'files', f.id));
-            }
-        };
-
-        // NAV & SEARCH
-        document.querySelectorAll('#main-nav button').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                btn.classList.add('active');
-                currentView = btn.dataset.view;
-                document.getElementById('view-title').textContent = currentView.replace('-', ' ');
-                document.getElementById('trash-actions').classList.toggle('hidden', currentView !== 'trash');
-                render();
-                if (window.innerWidth < 768) toggleSidebar();
-            };
-        });
-
-        document.getElementById('search-input').oninput = (e) => {
-            searchQuery = e.target.value;
-            render();
-        };
-
-        window.openSettings = () => document.getElementById('settings-modal').classList.remove('hidden');
-        window.closeSettings = () => document.getElementById('settings-modal').classList.add('hidden');
-
-        window.handleJoinDrive = () => {
-            const id = document.getElementById('join-id-input').value.trim();
-            if (id.length > 5) {
-                localStorage.setItem('sync_drive_uid', id);
-                location.reload();
-            }
-        };
-
-        window.resetToLocal = () => {
-            localStorage.removeItem('sync_drive_uid');
-            location.reload();
-        };
-
-        window.copyMyId = () => {
-            const el = document.createElement('textarea');
-            el.value = activeUid;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            showToast("ID Copied");
-            setTimeout(hideToast, 2000);
+            if (isHidden) { sidebar.classList.remove('-translate-x-full'); if (window.innerWidth < 768) backdrop.classList.remove('hidden'); }
+            else { sidebar.classList.add('-translate-x-full'); backdrop.classList.add('hidden'); }
         };
 
         function showToast(msg, isError = false) {
@@ -563,11 +395,7 @@
             t.classList.remove('translate-y-32');
         }
 
-        function hideToast() {
-            document.getElementById('toast').classList.add('translate-y-32');
-        }
-
-        initAuth();
+        function hideToast() { document.getElementById('toast').classList.add('translate-y-32'); }
     </script>
 </body>
 </html>
